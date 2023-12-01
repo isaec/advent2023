@@ -10,3 +10,11 @@ glam.workspace = true
 itertools.workspace = true
 petgraph.workspace = true
 rayon.workspace = true
+
+[[bin]]
+name = "part1"
+path = "src/part1.rs"
+
+[[bin]]
+name = "part2"
+path = "src/part2.rs"
