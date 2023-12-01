@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 glam.workspace = true
+indoc.workspace = true
 itertools.workspace = true
 petgraph.workspace = true
 rayon.workspace = true

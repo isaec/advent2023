@@ -10,10 +10,13 @@ pub fn part2(input: &str) -> String {
 #[cfg(test)]
 mod part2_tests {
     use super::*;
+    use indoc::indoc;
 
     #[test]
     fn example() {
-        let input = include_str!("../example.txt");
+        let input = indoc! {r#"
+
+        "#};
         assert_eq!(part2(input), "");
     }
 
