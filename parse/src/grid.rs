@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
 use miette::{Diagnostic, Result};
 use thiserror::Error;
@@ -66,6 +66,24 @@ impl<T> Grid<T> {
     pub fn get(&self, x: usize, y: usize) -> Result<&T> {
         self.validate(x, y)?;
         Ok(&self.data[self.index(x, y)])
+    }
+
+    pub fn get_tuple(&self, (x, y): (usize, usize)) -> Result<&T> {
+        self.get(x, y)
+    }
+
+    pub fn build_lookup(&self) -> HashMap<T, Vec<(usize, usize)>>
+    where
+        T: Eq + Hash + Copy,
+    {
+        let mut lookup = HashMap::new();
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let tile = self.get(x, y).expect("valid index");
+                lookup.entry(*tile).or_insert_with(Vec::new).push((x, y));
+            }
+        }
+        lookup
     }
 }
 
@@ -168,5 +186,32 @@ mod tests {
                 Tile::Empty,
             ]
         );
+    }
+
+    #[test]
+    fn test_grid_build_lookup() {
+        let input = indoc! {r#"
+            ###
+            #1#
+            #..
+        "#};
+
+        let grid = parse_grid(input, |c| c).unwrap();
+        let lookup = grid.build_lookup();
+        assert_eq!(lookup.len(), 3);
+        assert_eq!(lookup.get(&'#').unwrap().len(), 6);
+        assert_eq!(lookup.get(&'1').unwrap().len(), 1);
+        assert_eq!(lookup.get(&'.').unwrap().len(), 2);
+
+        let validate_lookup = |char: char| {
+            let coords = lookup.get(&char).unwrap();
+            for (x, y) in coords {
+                assert_eq!(grid.get(*x, *y).unwrap(), &char);
+            }
+        };
+
+        validate_lookup('#');
+        validate_lookup('1');
+        validate_lookup('.');
     }
 }
