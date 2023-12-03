@@ -52,6 +52,63 @@ pub struct Neighbors {
     down_right: Option<(usize, usize)>,
 }
 
+#[derive(Debug)]
+pub enum Relationship {
+    Orthogonal,
+    Diagonal,
+    Adjacent,
+}
+
+impl Neighbors {
+    pub fn iter(&self, relation: Relationship) -> impl Iterator<Item = (usize, usize)> {
+        macro_rules! iter_chain {
+            ($($iter:expr),*) => {
+                None.into_iter()
+                    $(.chain($iter.into_iter()))*
+            };
+        }
+
+        match relation {
+            Relationship::Orthogonal => {
+                iter_chain! {
+                    self.up,
+                    self.down,
+                    self.left,
+                    self.right,
+                    None,
+                    None,
+                    None,
+                    None
+                }
+            }
+            Relationship::Diagonal => {
+                iter_chain! {
+                    self.up_left,
+                    self.up_right,
+                    self.down_left,
+                    self.down_right,
+                    None,
+                    None,
+                    None,
+                    None
+                }
+            }
+            Relationship::Adjacent => {
+                iter_chain! {
+                    self.up,
+                    self.down,
+                    self.left,
+                    self.right,
+                    self.up_left,
+                    self.up_right,
+                    self.down_left,
+                    self.down_right
+                }
+            }
+        }
+    }
+}
+
 impl<T> Grid<T> {
     pub fn index(&self, x: usize, y: usize) -> usize {
         y * self.width + x
@@ -124,6 +181,13 @@ impl<T> Grid<T> {
             down_left: cond_tuple! {y < self.height - 1 && x > 0 => (x - 1, y + 1)},
             down_right: cond_tuple! {y < self.height - 1 && x < self.width - 1 => (x + 1, y + 1)},
         })
+    }
+
+    pub fn build_graph<E, Ty>(
+        &self,
+        edge_map_fn: impl Fn(T, T) -> Option<E>,
+    ) -> GraphMap<T, E, Ty> {
+        todo!()
     }
 }
 
