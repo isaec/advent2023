@@ -12,6 +12,8 @@ itertools.workspace = true
 petgraph.workspace = true
 rayon.workspace = true
 fancy-regex.workspace = true
+miette.workspace = true
+miette_pretty.workspace = true
 
 [[bin]]
 name = "part1"

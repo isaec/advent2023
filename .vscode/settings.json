@@ -1,3 +1,10 @@
 {
-  "cSpell.words": ["fastmod", "indoc", "itertools", "justfile", "testwatch"]
+  "cSpell.words": [
+    "fastmod",
+    "indoc",
+    "itertools",
+    "justfile",
+    "miette",
+    "testwatch"
+  ]
 }
