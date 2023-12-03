@@ -11,3 +11,6 @@ new PKG:
   cp -vr template {{PKG}}
   fastmod 'template' '{{PKG}}' -- {{PKG}}/Cargo.toml
   fastmod '^members = \[(.*)\]' 'members = [${1}, "{{PKG}}"]' -- Cargo.toml
+
+test_libs:
+  cargo test --all --lib

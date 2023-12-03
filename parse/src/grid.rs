@@ -87,3 +87,49 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
         height,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use indoc::indoc;
+
+    #[test]
+    fn test_grid() {
+        let input = indoc! {r#"
+            abc
+            def
+            ghi
+        "#};
+        let grid = parse_grid(input, |c| c).unwrap();
+        assert_eq!(grid.width, 3);
+        assert_eq!(grid.height, 3);
+        assert_eq!(grid.data.len(), 9);
+        assert_eq!(grid.get(0, 0).unwrap(), &'a');
+        assert_eq!(grid.get(1, 0).unwrap(), &'b');
+        assert_eq!(grid.get(2, 0).unwrap(), &'c');
+        assert_eq!(grid.get(0, 1).unwrap(), &'d');
+        assert_eq!(grid.get(1, 1).unwrap(), &'e');
+        assert_eq!(grid.get(2, 1).unwrap(), &'f');
+        assert_eq!(grid.get(0, 2).unwrap(), &'g');
+        assert_eq!(grid.get(1, 2).unwrap(), &'h');
+        assert_eq!(grid.get(2, 2).unwrap(), &'i');
+    }
+
+    #[test]
+    fn test_grid_out_of_bounds() {
+        let input = indoc! {r#"
+            abc
+            def
+            ghi
+        "#};
+        let grid = parse_grid(input, |c| c).unwrap();
+        assert_eq!(
+            grid.get(3, 0).unwrap_err().to_string(),
+            "out of bounds index in x axis, x=3 (width: 3, height: 3)"
+        );
+        assert_eq!(
+            grid.get(0, 3).unwrap_err().to_string(),
+            "out of bounds index in y axis, y=3 (width: 3, height: 3)"
+        );
+    }
+}

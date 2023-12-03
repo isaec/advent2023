@@ -7,4 +7,5 @@ edition = "2021"
 
 [dependencies]
 miette.workspace = true
+indoc.workspace = true
 thiserror = "1.0.50"
