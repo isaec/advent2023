@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
 use miette::{Diagnostic, Result};
+use petgraph::graphmap::GraphMap;
 use thiserror::Error;
 
 /// x is the column, y is the row
@@ -36,6 +37,19 @@ pub enum GridError {
         height: usize,
         axis: Axis,
     },
+}
+
+#[derive(Debug)]
+pub struct Neighbors {
+    up: Option<(usize, usize)>,
+    down: Option<(usize, usize)>,
+    left: Option<(usize, usize)>,
+    right: Option<(usize, usize)>,
+
+    up_left: Option<(usize, usize)>,
+    up_right: Option<(usize, usize)>,
+    down_left: Option<(usize, usize)>,
+    down_right: Option<(usize, usize)>,
 }
 
 impl<T> Grid<T> {
@@ -84,6 +98,32 @@ impl<T> Grid<T> {
             }
         }
         lookup
+    }
+
+    pub fn get_neighbors(&self, x: usize, y: usize) -> Result<Neighbors> {
+        macro_rules! cond_tuple {
+            ($cond:expr => ($x:expr, $y:expr)) => {
+                if $cond {
+                    Some(($x, $y))
+                } else {
+                    None
+                }
+            };
+        }
+
+        self.validate(x, y)?;
+
+        Ok(Neighbors {
+            up: cond_tuple! {y > 0 => (x, y - 1)},
+            down: cond_tuple! {y < self.height - 1 => (x, y + 1)},
+            left: cond_tuple! {x > 0 => (x - 1, y)},
+            right: cond_tuple! {x < self.width - 1 => (x + 1, y)},
+
+            up_left: cond_tuple! {y > 0 && x > 0 => (x - 1, y - 1)},
+            up_right: cond_tuple! {y > 0 && x < self.width - 1 => (x + 1, y - 1)},
+            down_left: cond_tuple! {y < self.height - 1 && x > 0 => (x - 1, y + 1)},
+            down_right: cond_tuple! {y < self.height - 1 && x < self.width - 1 => (x + 1, y + 1)},
+        })
     }
 }
 
@@ -213,5 +253,59 @@ mod tests {
         validate_lookup('#');
         validate_lookup('1');
         validate_lookup('.');
+    }
+
+    #[test]
+    fn test_grid_get_neighbors() {
+        let input = indoc! {r#"
+            #####
+            #...#
+            #...#
+            #####
+        "#};
+
+        let grid = parse_grid(input, |c| c).unwrap();
+
+        assert_eq!(grid.width, 5);
+        assert_eq!(grid.height, 4);
+
+        {
+            let neighbors = grid.get_neighbors(0, 0).unwrap();
+            assert_eq!(neighbors.up, None);
+            assert_eq!(neighbors.down, Some((0, 1)));
+            assert_eq!(neighbors.left, None);
+            assert_eq!(neighbors.right, Some((1, 0)));
+
+            assert_eq!(neighbors.up_left, None);
+            assert_eq!(neighbors.up_right, None);
+            assert_eq!(neighbors.down_left, None);
+            assert_eq!(neighbors.down_right, Some((1, 1)));
+        }
+
+        {
+            let neighbors = grid.get_neighbors(1, 1).unwrap();
+            assert_eq!(neighbors.up, Some((1, 0)));
+            assert_eq!(neighbors.down, Some((1, 2)));
+            assert_eq!(neighbors.left, Some((0, 1)));
+            assert_eq!(neighbors.right, Some((2, 1)));
+
+            assert_eq!(neighbors.up_left, Some((0, 0)));
+            assert_eq!(neighbors.up_right, Some((2, 0)));
+            assert_eq!(neighbors.down_left, Some((0, 2)));
+            assert_eq!(neighbors.down_right, Some((2, 2)));
+        }
+
+        {
+            let neighbors = grid.get_neighbors(4, 3).unwrap();
+            assert_eq!(neighbors.up, Some((4, 2)));
+            assert_eq!(neighbors.down, None);
+            assert_eq!(neighbors.left, Some((3, 3)));
+            assert_eq!(neighbors.right, None);
+
+            assert_eq!(neighbors.up_left, Some((3, 2)));
+            assert_eq!(neighbors.up_right, None);
+            assert_eq!(neighbors.down_left, None);
+            assert_eq!(neighbors.down_right, None);
+        }
     }
 }
