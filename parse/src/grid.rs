@@ -132,4 +132,41 @@ mod tests {
             "out of bounds index in y axis, y=3 (width: 3, height: 3)"
         );
     }
+
+    #[test]
+    fn test_grid_parse_enum() {
+        #[derive(Debug, PartialEq)]
+        enum Tile {
+            Empty,
+            Wall,
+            N(usize),
+        }
+
+        let input = indoc! {r#"
+            ###
+            #1#
+            #..
+        "#};
+
+        let grid = parse_grid(input, |c| match c {
+            '#' => Tile::Wall,
+            '.' => Tile::Empty,
+            c => Tile::N(c.to_digit(10).unwrap() as usize),
+        });
+
+        assert_eq!(
+            grid.unwrap().data,
+            vec![
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::N(1),
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Empty,
+                Tile::Empty,
+            ]
+        );
+    }
 }
