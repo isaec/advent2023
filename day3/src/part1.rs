@@ -5,7 +5,6 @@ use miette::Result;
 
 // add pretty and pretty_msg to Result to show the line number where the error occurred
 use miette_pretty::Pretty;
-use petgraph::adj;
 
 fn main() {
     let input = include_str!("../input.txt");
