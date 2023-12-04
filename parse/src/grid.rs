@@ -54,13 +54,16 @@ pub struct Neighbors {
 
 #[derive(Debug)]
 pub enum Relationship {
+    /// ``+`` pattern
     Orthogonal,
+    /// ``x`` pattern
     Diagonal,
+    /// ``+`` and ``x`` pattern
     Adjacent,
 }
 
 impl Neighbors {
-    pub fn iter(&self, relation: Relationship) -> impl Iterator<Item = (usize, usize)> {
+    pub fn iter(&self, relation: &Relationship) -> impl Iterator<Item = (usize, usize)> {
         macro_rules! iter_chain {
             ($($iter:expr),*) => {
                 None.into_iter()
@@ -185,9 +188,31 @@ impl<T> Grid<T> {
 
     pub fn build_graph<E, Ty>(
         &self,
+        relation: Relationship,
         edge_map_fn: impl Fn(T, T) -> Option<E>,
-    ) -> GraphMap<T, E, Ty> {
-        todo!()
+    ) -> GraphMap<(usize, usize), E, Ty>
+    where
+        T: Eq + Hash + Copy + Ord,
+        Ty: petgraph::EdgeType,
+    {
+        let mut graph = GraphMap::new();
+        for y in 0..self.height {
+            for x in 0..self.width {
+                let tile = self.get(x, y).expect("valid index");
+                let cord = (x, y);
+                if !graph.contains_node(cord) {
+                    graph.add_node(cord);
+                }
+                let neighbors = self.get_neighbors(x, y).expect("valid index");
+                for neighbor in neighbors.iter(&relation) {
+                    let neighbor_tile = self.get_tuple(neighbor).expect("valid index");
+                    if let Some(edge) = edge_map_fn(*tile, *neighbor_tile) {
+                        graph.add_edge(cord, neighbor, edge);
+                    }
+                }
+            }
+        }
+        graph
     }
 }
 
@@ -214,6 +239,10 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
 mod tests {
     use super::*;
     use indoc::indoc;
+    use petgraph::{
+        algo::{astar, dijkstra, BoundedMeasure},
+        Undirected,
+    };
 
     #[test]
     fn test_grid() {
@@ -371,5 +400,119 @@ mod tests {
             assert_eq!(neighbors.down_left, None);
             assert_eq!(neighbors.down_right, None);
         }
+    }
+
+    #[test]
+    fn test_neighbors_iter() {
+        let input = indoc! {r#"
+            #####
+            #...#
+            #...#
+            #####
+        "#};
+
+        let grid = parse_grid(input, |c| c).unwrap();
+
+        let neighbors = grid.get_neighbors(1, 1).unwrap();
+        let iter = neighbors.iter(&Relationship::Orthogonal);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![(1, 0), (1, 2), (0, 1), (2, 1)]
+        );
+
+        let neighbors = grid.get_neighbors(1, 1).unwrap();
+        let iter = neighbors.iter(&Relationship::Diagonal);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![(0, 0), (2, 0), (0, 2), (2, 2)]
+        );
+
+        let neighbors = grid.get_neighbors(1, 1).unwrap();
+        let iter = neighbors.iter(&Relationship::Adjacent);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![
+                (1, 0),
+                (1, 2),
+                (0, 1),
+                (2, 1),
+                (0, 0),
+                (2, 0),
+                (0, 2),
+                (2, 2)
+            ]
+        );
+
+        let neighbors = grid.get_neighbors(0, 0).unwrap();
+        let iter = neighbors.iter(&Relationship::Adjacent);
+        assert_eq!(iter.collect::<Vec<_>>(), vec![(0, 1), (1, 0), (1, 1)]);
+    }
+
+    #[test]
+    fn test_grid_build_graph() {
+        let input = indoc! {r#"
+            ###########
+            #....#....#
+            #....#....#
+            #....#....#
+            #.........#
+            ###########
+        "#};
+
+        #[derive(Debug, PartialEq, Eq, Hash, Copy, Clone, PartialOrd, Ord)]
+        enum Tile {
+            Wall,
+            Empty,
+        }
+
+        let grid = parse_grid(input, |c| match c {
+            '#' => Tile::Wall,
+            '.' => Tile::Empty,
+            _ => panic!("invalid tile"),
+        })
+        .expect("valid grid");
+
+        assert_eq!(grid.width, 11);
+        assert_eq!(grid.height, 6);
+
+        let graph =
+            grid.build_graph::<u64, Undirected>(Relationship::Orthogonal, |a, b| match (a, b) {
+                (Tile::Empty, Tile::Empty) => Some(1),
+                _ => None,
+            });
+
+        dbg!(&graph);
+
+        assert_eq!(graph.node_count(), 66);
+
+        let path = astar(
+            &graph,
+            (1, 1),
+            |finish| finish == (9, 4),
+            |(_, _, n)| *dbg!(n),
+            |_| 0,
+        )
+        .expect("path exists");
+
+        assert_eq!(
+            path,
+            (
+                11,
+                vec![
+                    (1, 1),
+                    (1, 2),
+                    (1, 3),
+                    (1, 4),
+                    (2, 4),
+                    (3, 4),
+                    (4, 4),
+                    (5, 4),
+                    (6, 4),
+                    (7, 4),
+                    (8, 4),
+                    (9, 4)
+                ]
+            )
+        );
     }
 }
