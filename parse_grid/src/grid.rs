@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    fmt::{format, Debug},
-    hash::Hash,
-};
+use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
 use miette::{Diagnostic, Result};
 use petgraph::graphmap::GraphMap;
