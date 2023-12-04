@@ -12,6 +12,10 @@ new PKG:
   fastmod 'template' '{{PKG}}' -- {{PKG}}/Cargo.toml
   fastmod '^members = \[((?:.|\n)*?)\]' 'members = [${1}    "{{PKG}}"]' -- Cargo.toml
 
+dev PKG BIN:
+  # watch the example test until it passes then run the binary
+  cargo watch -x 'test example --package {{PKG}} --bin {{BIN}}' -s 'cargo run --package {{PKG}} --bin {{BIN}}'
+
 test_libs:
   cargo test --all --lib
 
