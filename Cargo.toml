@@ -1,6 +1,14 @@
 [workspace]
 resolver = "2"
-members = ["miette_pretty", "parse_grid", "template", "day1", "day2", "day3"]
+members = [
+    "miette_pretty",
+    "parse_grid",
+    "parse_elem",
+    "template",
+    "day1",
+    "day2",
+    "day3",
+]
 
 [workspace.dependencies]
 itertools = "0.12.0"
@@ -12,3 +20,4 @@ fancy-regex = "0.12.0"
 miette = { version = "5.10.0", features = ["fancy"] }
 miette_pretty = { path = "miette_pretty" }
 parse_grid = { path = "parse_grid" }
+parse_elem = { path = "parse_elem" }
