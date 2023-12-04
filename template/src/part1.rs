@@ -1,16 +1,19 @@
 use miette::Result;
-
-// add pretty and pretty_msg to Result to show the line number where the error occurred
 use miette_pretty::Pretty;
+use parse::QuickRegex;
 
 fn main() {
     let input = include_str!("../input.txt");
     dbg!(part1(input).unwrap());
 }
 
-pub fn part1(input: &str) -> Result<u64> {
-    let num = "12".parse::<u64>().pretty_msg("parse to u64")?;
-    Ok(num)
+fn parse(input: &str) -> Result<Vec<&str>> {
+    input.lines().map(|l| Ok(l)).collect()
+}
+
+pub fn part1(input: &str) -> Result<i64> {
+    let parsed = parse(input)?;
+    Ok(0)
 }
 
 #[cfg(test)]
@@ -23,7 +26,6 @@ mod part1_tests {
         let input = indoc! {r#"
 
 "#};
-        dbg!(&input);
         assert_eq!(part1(input).expect("part1 should return Ok"), 0);
     }
 
