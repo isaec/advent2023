@@ -1,15 +1,45 @@
-use std::{collections::HashMap, fmt::Debug, hash::Hash};
+use std::{
+    collections::HashMap,
+    fmt::{format, Debug},
+    hash::Hash,
+};
 
 use miette::{Diagnostic, Result};
 use petgraph::graphmap::GraphMap;
 use thiserror::Error;
 
 /// x is the column, y is the row
-#[derive(Debug)]
 pub struct Grid<T> {
     pub data: Vec<T>,
     pub width: usize,
     pub height: usize,
+}
+
+impl<T: Debug> Debug for Grid<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "width={}, height={} {{\n", self.width, self.height)?;
+        let dbg_str = self
+            .data
+            .iter()
+            .map(|tile| format!("{:?}", tile))
+            .collect::<Vec<_>>();
+
+        let max_len = dbg_str.iter().map(|s| s.len()).max().unwrap_or(0);
+
+        dbg_str
+            .chunks(self.width)
+            .map(|row| {
+                row.iter()
+                    .map(|s| format!("{:width$}", s, width = max_len))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .enumerate()
+            .map(|(y, row)| format!(" {y}\t| {row}\n"))
+            .chain(std::iter::once("}".to_string()))
+            .map(|row| write!(f, "{row}"))
+            .collect::<std::fmt::Result>()
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -237,6 +267,8 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
 
 #[cfg(test)]
 mod tests {
+    use std::path::Display;
+
     use super::*;
     use indoc::indoc;
     use petgraph::{
@@ -513,6 +545,51 @@ mod tests {
                     (9, 4)
                 ]
             )
+        );
+    }
+
+    #[test]
+    fn test_grid_debug() {
+        let input = indoc! {r#"
+            abc
+            def
+            ghi
+        "#};
+        let grid = parse_grid(input, |c| c).unwrap();
+        dbg!(&grid);
+        assert_eq!(
+            format!("{:?}", grid),
+            "width=3, height=3 {\n 0\t| 'a' 'b' 'c'\n 1\t| 'd' 'e' 'f'\n 2\t| 'g' 'h' 'i'\n}"
+        );
+    }
+
+    #[test]
+    fn test_grid_debug_enum() {
+        #[derive(Debug)]
+        enum Tile {
+            Empty,
+            Wall,
+            N(usize),
+        }
+
+        let input = indoc! {r#"
+            ###
+            #1#
+            #..
+        "#};
+
+        let grid = parse_grid(input, |c| match c {
+            '#' => Tile::Wall,
+            '.' => Tile::Empty,
+            c => Tile::N(c.to_digit(10).unwrap() as usize),
+        })
+        .expect("valid grid");
+
+        dbg!(&grid);
+
+        assert_eq!(
+            format!("{:?}", grid),
+            "width=3, height=3 {\n 0\t| Wall  Wall  Wall \n 1\t| Wall  N(1)  Wall \n 2\t| Wall  Empty Empty\n}"
         );
     }
 }
