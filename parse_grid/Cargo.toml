@@ -1,5 +1,5 @@
 [package]
-name = "parse"
+name = "parse_grid"
 version = "0.1.0"
 edition = "2021"
 
