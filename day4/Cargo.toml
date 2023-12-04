@@ -14,7 +14,7 @@ rayon.workspace = true
 fancy-regex.workspace = true
 miette.workspace = true
 miette_pretty.workspace = true
-parse_grid.workspace = true
+parse.workspace = true
 
 [[bin]]
 name = "part1"
