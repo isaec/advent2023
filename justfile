@@ -10,7 +10,7 @@ run PKG BIN:
 new PKG:
   cp -vr template {{PKG}}
   fastmod 'template' '{{PKG}}' -- {{PKG}}/Cargo.toml
-  fastmod '^members = \[((?:.|\n)*?)\]' 'members = [${1}    "{{PKG}}",\n]' -- Cargo.toml
+  fastmod '^members = \[((?:.|\n)*?)\]' 'members = [${1}    "{{PKG}}"]' -- Cargo.toml
 
 test_libs:
   cargo test --all --lib
