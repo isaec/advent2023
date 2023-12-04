@@ -14,3 +14,6 @@ new PKG:
 
 test_libs:
   cargo test --all --lib
+
+testwatch_libs:
+  cargo watch -x 'test --all --lib'

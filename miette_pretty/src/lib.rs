@@ -20,3 +20,21 @@ impl<T, E: std::error::Error + Send + Sync + 'static> Pretty<T, E> for Result<T,
             .wrap_err(format!("at {}", std::panic::Location::caller()))
     }
 }
+
+impl<T> Pretty<T, Report> for Option<T> {
+    #[track_caller]
+    fn pretty_msg(self, msg: impl Display) -> Result<T, Report> {
+        self.ok_or(Report::msg(format!(
+            "{msg} at {}",
+            std::panic::Location::caller()
+        )))
+    }
+
+    #[track_caller]
+    fn pretty(self) -> Result<T, Report> {
+        self.ok_or(Report::msg(format!(
+            "None at {}",
+            std::panic::Location::caller()
+        )))
+    }
+}

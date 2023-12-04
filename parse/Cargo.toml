@@ -9,4 +9,6 @@ edition = "2021"
 miette.workspace = true
 indoc.workspace = true
 petgraph.workspace = true
+fancy-regex.workspace = true
+miette_pretty.workspace = true
 thiserror = "1.0.50"
