@@ -4,29 +4,23 @@ use miette::Result;
 
 // add pretty and pretty_msg to Result to show the line number where the error occurred
 use miette_pretty::Pretty;
+use parse::QuickRegex;
 
 fn main() {
     let input = include_str!("../input.txt");
     dbg!(part1(input).unwrap());
 }
 
-fn parse(input: &str) -> Result<Vec<(HashSet<u64>, HashSet<u64>)>> {
-    Ok(input
+fn parse(input: &str) -> Result<Vec<(HashSet<i64>, HashSet<i64>)>> {
+    input
         .lines()
         .map(|l| {
-            let parts = l.split(": ").collect::<Vec<_>>();
-            let numbers = parts[1].split(" | ").collect::<Vec<_>>();
-            let winners = numbers[0]
-                .split_whitespace()
-                .map(|n| n.parse::<u64>().unwrap())
-                .collect::<HashSet<_>>();
-            let my_numbers = numbers[1]
-                .split_whitespace()
-                .map(|n| n.parse::<u64>().unwrap())
-                .collect::<HashSet<_>>();
-            (winners, my_numbers)
+            let (numbers, winners) = l.split_once("|").pretty()?;
+            let numbers = numbers.get_match(r":.+")?.get_digits()?;
+            let winners = winners.get_digits()?;
+            Ok((HashSet::from_iter(numbers), HashSet::from_iter(winners)))
         })
-        .collect::<Vec<_>>())
+        .collect()
 }
 
 pub fn part1(input: &str) -> Result<u64> {
@@ -36,14 +30,10 @@ pub fn part1(input: &str) -> Result<u64> {
         .map(|(w, m)| {
             let intersections = w.intersection(m).count() as u64;
             if intersections == 0 {
-                return 0;
+                0
+            } else {
+                2_u64.pow((intersections - 1) as u32)
             }
-            let mut val = 1;
-            for _ in 1..intersections {
-                val = val * 2;
-            }
-            dbg!(val);
-            val
         })
         .sum::<u64>())
 }
@@ -69,6 +59,6 @@ Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
-        assert_eq!(part1(input).expect("part1 should return Ok"), 0);
+        assert_eq!(part1(input).expect("part1 should return Ok"), 21213);
     }
 }
