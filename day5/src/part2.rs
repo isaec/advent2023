@@ -100,33 +100,32 @@ fn parse(input: &str) -> Result<(Vec<Range<i64>>, Maps)> {
     ))
 }
 
+fn apply_map(seed: i64, map: &Vec<Map>) -> i64 {
+    let mut result = seed;
+    for map in map {
+        if result >= map.source_range_start && result < map.source_range_start + map.range_length {
+            result = map.dest_range_start + (result - map.source_range_start);
+            break;
+        }
+    }
+    result
+}
+fn lookup_final_location(maps: &Maps, seed: i64) -> i64 {
+    let mut result = seed;
+    result = apply_map(result, &maps.seed_to_soil);
+    result = apply_map(result, &maps.soil_to_fertilizer);
+    result = apply_map(result, &maps.fertilizer_to_water);
+    result = apply_map(result, &maps.water_to_light);
+    result = apply_map(result, &maps.light_to_temperature);
+    result = apply_map(result, &maps.temperature_to_humidity);
+    result = apply_map(result, &maps.humidity_to_location);
+    result
+}
+
 pub fn part2(input: &str) -> Result<i64> {
     let parsed = parse(input)?;
     dbg!(parsed.0.len());
     dbg!(parsed.1.seed_to_soil.len());
-    let apply_map = |seed: i64, map: &Vec<Map>| {
-        let mut result = seed;
-        for map in map {
-            if result >= map.source_range_start
-                && result < map.source_range_start + map.range_length
-            {
-                result = map.dest_range_start + (result - map.source_range_start);
-                break;
-            }
-        }
-        result
-    };
-    let lookup_final_location = |seed: i64| {
-        let mut result = seed;
-        result = apply_map(result, &parsed.1.seed_to_soil);
-        result = apply_map(result, &parsed.1.soil_to_fertilizer);
-        result = apply_map(result, &parsed.1.fertilizer_to_water);
-        result = apply_map(result, &parsed.1.water_to_light);
-        result = apply_map(result, &parsed.1.light_to_temperature);
-        result = apply_map(result, &parsed.1.temperature_to_humidity);
-        result = apply_map(result, &parsed.1.humidity_to_location);
-        result
-    };
     parsed
         .0
         .iter()
@@ -134,7 +133,7 @@ pub fn part2(input: &str) -> Result<i64> {
             dbg!(&seeds);
             seeds
                 .clone()
-                .map(|seed| lookup_final_location(seed))
+                .map(|seed| lookup_final_location(&parsed.1, seed))
                 .collect::<Vec<_>>()
         })
         .min()
