@@ -7,6 +7,9 @@ test PKG BIN='part1 part2' ON='example':
 run PKG BIN:
   cargo run --package {{PKG}} --bin {{BIN}}
 
+run_release PKG BIN:
+  cargo run --release --package {{PKG}} --bin {{BIN}}
+
 new PKG:
   cp -vr template {{PKG}}
   fastmod 'template' '{{PKG}}' -- {{PKG}}/Cargo.toml

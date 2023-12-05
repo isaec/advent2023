@@ -191,6 +191,6 @@ humidity-to-location map:
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 26829166);
     }
 }
