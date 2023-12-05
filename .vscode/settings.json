@@ -7,6 +7,7 @@
     "itertools",
     "justfile",
     "miette",
+    "nums",
     "petgraph",
     "testwatch",
     "thiserror"
