@@ -4,6 +4,7 @@ use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
+use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -129,12 +130,14 @@ pub fn part2(input: &str) -> Result<i64> {
     parsed
         .0
         .iter()
-        .flat_map(|seeds| {
+        .map(|seeds| {
             dbg!(&seeds);
             seeds
                 .clone()
+                .into_par_iter()
                 .map(|seed| lookup_final_location(&parsed.1, seed))
-                .collect::<Vec<_>>()
+                .min()
+                .expect("min should exist")
         })
         .min()
         .pretty()
