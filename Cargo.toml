@@ -1,6 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["miette_pretty", "parse", "template", "day1", "day2", "day3", "day4"]
+members = [
+    "miette_pretty",
+    "parse",
+    "template",
+    "day1",
+    "day2",
+    "day3",
+    "day4",
+    "day5",
+]
 
 [workspace.dependencies]
 itertools = "0.12.0"
