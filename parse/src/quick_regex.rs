@@ -69,6 +69,9 @@ impl QuickRegex for str {
 
 #[cfg(test)]
 mod tests {
+    use indoc::indoc;
+    use miette::Result;
+
     use super::*;
 
     #[test]
@@ -118,5 +121,63 @@ mod tests {
 
         assert_eq!(winners.unwrap(), vec![41, 48, 83, 86, 17]);
         assert_eq!(my_numbers.unwrap(), vec![83, 86, 6, 31, 17, 9, 48, 53]);
+    }
+
+    fn aoc2022_day5_parse(input: &str) -> Result<(Vec<Vec<char>>, Vec<(usize, usize, usize)>)> {
+        let (initial, moves) = input.split_once("\n\n").expect("contains \n\n");
+        let moves = moves
+            .lines()
+            .map(|l| {
+                let digits = l.get_digits()?;
+                Ok((digits[0] as usize, digits[1] as usize, digits[2] as usize))
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let initial = initial
+            .lines()
+            .take_while(|l| !l.starts_with(" 1"))
+            .map(|l| {
+                let elems: Vec<char> = l
+                    .get_matches(r"\[.\]|   ")?
+                    .iter()
+                    .map(|s| s.chars().nth(1).expect("always matches 3 chars"))
+                    .collect();
+                Ok(elems)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let mut stacks = vec![vec![]; initial.first().pretty()?.len()];
+
+        for row in initial.iter().rev() {
+            for (i, elem) in row.iter().enumerate().filter(|(_, e)| **e != ' ') {
+                stacks[i].push(*elem);
+            }
+        }
+
+        Ok((stacks, moves))
+    }
+
+    #[test]
+    fn test_aoc2022_day5_input() {
+        let input = indoc! {r#"
+                [D]    
+            [N] [C]    
+            [Z] [M] [P]
+             1   2   3 
+
+            move 1 from 2 to 1
+            move 3 from 1 to 3
+            move 2 from 2 to 1
+            move 1 from 1 to 2
+            "#};
+
+        let (initial, moves) = aoc2022_day5_parse(input).expect("parse");
+
+        assert_eq!(
+            initial,
+            vec![vec!['Z', 'N'], vec!['M', 'C', 'D'], vec!['P']]
+        );
+
+        assert_eq!(moves, vec![(1, 2, 1), (3, 1, 3), (2, 2, 1), (1, 1, 2)]);
     }
 }
