@@ -15,6 +15,7 @@ fancy-regex.workspace = true
 miette.workspace = true
 miette_pretty.workspace = true
 parse.workspace = true
+counter.workspace = true
 
 [[bin]]
 name = "part1"

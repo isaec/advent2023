@@ -21,5 +21,6 @@ petgraph = "0.6.4"
 indoc = "2.0.4"
 fancy-regex = "0.12.0"
 miette = { version = "5.10.0", features = ["fancy"] }
+counter = "0.5.7"
 miette_pretty = { path = "miette_pretty" }
 parse = { path = "parse" }

@@ -1,3 +1,4 @@
+use counter::Counter;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
@@ -20,30 +21,22 @@ fn get_val(c: &char) -> i64 {
 }
 
 fn get_hand_type(hand: &Vec<char>) -> Result<i64> {
-    let matches = hand
+    let matches = hand.iter().map(|v| *v).collect::<Counter<_>>();
+    let top = matches
+        .k_most_common_ordered(2)
         .iter()
-        .unique()
-        .map(|c| hand.iter().filter(|c2| c == *c2).collect::<Vec<_>>())
-        .sorted_by(|a, b| b.len().cmp(&a.len()))
-        .collect::<Vec<_>>();
-    if matches.first().pretty()?.len() == 5 {
-        return Ok(6);
-    } else if matches.first().pretty()?.len() == 4 {
-        return Ok(5);
-    } else if matches.first().pretty()?.len() == 3 {
-        if matches.get(1).pretty()?.len() == 2 {
-            return Ok(4);
-        } else {
-            return Ok(3);
-        }
-    } else if matches.first().pretty()?.len() == 2 {
-        if matches.get(1).pretty()?.len() == 2 {
-            Ok(2)
-        } else {
-            Ok(1)
-        }
-    } else {
-        Ok(0)
+        .collect_tuple()
+        .map(|(a, b)| (a.1, b.1));
+
+    match top {
+        None => Ok(6),
+        Some((4, 1)) => Ok(5),
+        Some((3, 2)) => Ok(4),
+        Some((3, 1)) => Ok(3),
+        Some((2, 2)) => Ok(2),
+        Some((2, 1)) => Ok(1),
+        Some((1, 1)) => Ok(0),
+        _ => unimplemented!(),
     }
 }
 
