@@ -27,11 +27,15 @@ fn get_hand_type(hand: &Vec<char>) -> Result<i64> {
         .sorted_by(|a, b| b.len().cmp(&a.len()))
         .collect::<Vec<_>>();
     if matches.first().pretty()?.len() == 5 {
-        return Ok(5);
+        return Ok(6);
     } else if matches.first().pretty()?.len() == 4 {
-        return Ok(4);
+        return Ok(5);
     } else if matches.first().pretty()?.len() == 3 {
-        Ok(3)
+        if matches.get(1).pretty()?.len() == 2 {
+            return Ok(4);
+        } else {
+            return Ok(3);
+        }
     } else if matches.first().pretty()?.len() == 2 {
         if matches.get(1).pretty()?.len() == 2 {
             Ok(2)
@@ -101,13 +105,22 @@ QQQJA 483
         let input = "AAAAA";
         assert_eq!(
             get_hand_type(&input.chars().collect()).expect("should get hand type"),
-            5
+            6
         );
     }
 
     #[test]
     fn four_of_a_kind() {
         let input = "AA8AA";
+        assert_eq!(
+            get_hand_type(&input.chars().collect()).expect("should get hand type"),
+            5
+        );
+    }
+
+    #[test]
+    fn full_house_kind() {
+        let input = "23332";
         assert_eq!(
             get_hand_type(&input.chars().collect()).expect("should get hand type"),
             4
