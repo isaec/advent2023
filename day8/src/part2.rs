@@ -3,6 +3,7 @@ use std::{collections::HashMap, hash::Hash};
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
+use num::integer::lcm;
 use parse::QuickRegex;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -62,21 +63,28 @@ pub fn part2(input: &str) -> Result<u64> {
     let (directions, map) = parse(input)?;
     dbg!((&directions, &map));
     let nodes_ending_in_a = map.keys().filter(|key| key.ends_with('A')).collect_vec();
-    let states = nodes_ending_in_a.clone();
-    dbg!(&states);
-    let mut steps = 1;
-    for direction in directions.iter().cycle() {
-        // dbg!(&direction);
-        let states = states
-            .par_iter()
-            .map(|state| step(state, direction, &map))
-            .collect::<Result<Vec<_>>>()?;
-        if states.iter().all(|state| *state == "ZZZ") {
-            break;
-        }
-        steps += 1;
-    }
-    Ok(steps)
+    let cycle_time = nodes_ending_in_a
+        .par_iter()
+        .map(|node| {
+            let mut current = **node;
+            let mut steps: u64 = 1;
+            for direction in directions.iter().cycle() {
+                current = step(current, direction, &map)?;
+                if current.ends_with('Z') {
+                    break;
+                }
+                steps += 1;
+            }
+            Ok(dbg!(steps))
+        })
+        .collect::<Result<Vec<_>>>()?;
+
+    // determine the smallest number that is a multiple of all cycle times (lcm)
+    cycle_time
+        .iter()
+        .map(|&x| x)
+        .reduce(|a, b| lcm(a, b))
+        .pretty()
 }
 
 #[cfg(test)]
