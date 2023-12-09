@@ -13,28 +13,27 @@ pub struct Grid<T> {
 
 impl<T: Debug> Debug for Grid<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "width={}, height={} {{\n", self.width, self.height)?;
+        writeln!(f, "width={}, height={} {{", self.width, self.height)?;
         let dbg_str = self
             .data
             .iter()
-            .map(|tile| format!("{:?}", tile))
+            .map(|tile| format!("{tile:?}"))
             .collect::<Vec<_>>();
 
-        let max_len = dbg_str.iter().map(|s| s.len()).max().unwrap_or(0);
+        let max_len = dbg_str.iter().map(String::len).max().unwrap_or(0);
 
         dbg_str
             .chunks(self.width)
             .map(|row| {
                 row.iter()
-                    .map(|s| format!("{:width$}", s, width = max_len))
+                    .map(|s| format!("{s:max_len$}"))
                     .collect::<Vec<_>>()
                     .join(" ")
             })
             .enumerate()
             .map(|(y, row)| format!(" {y}\t| {row}\n"))
             .chain(std::iter::once("}".to_string()))
-            .map(|row| write!(f, "{row}"))
-            .collect::<std::fmt::Result>()
+            .try_for_each(|row| write!(f, "{row}"))
     }
 }
 
@@ -78,7 +77,7 @@ pub struct Neighbors {
     down_right: Option<(usize, usize)>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum Relationship {
     /// ``+`` pattern
     Orthogonal,
@@ -139,6 +138,7 @@ impl Neighbors {
 }
 
 impl<T> Grid<T> {
+    #[must_use]
     pub fn index(&self, x: usize, y: usize) -> usize {
         y * self.width + x
     }
@@ -214,7 +214,7 @@ impl<T> Grid<T> {
 
     pub fn build_graph<E, Ty>(
         &self,
-        relation: Relationship,
+        relation: &Relationship,
         edge_map_fn: impl Fn(T, T) -> Option<E>,
     ) -> GraphMap<(usize, usize), E, Ty>
     where
@@ -504,7 +504,7 @@ mod tests {
         assert_eq!(grid.height, 6);
 
         let graph =
-            grid.build_graph::<u64, Undirected>(Relationship::Orthogonal, |a, b| match (a, b) {
+            grid.build_graph::<u64, Undirected>(&Relationship::Orthogonal, |a, b| match (a, b) {
                 (Tile::Empty, Tile::Empty) => Some(1),
                 _ => None,
             });
