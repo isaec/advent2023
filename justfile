@@ -30,3 +30,9 @@ clippy PKG:
 
 clippy_fix PKG:
   cargo clippy --package {{PKG}} --fix -- -W clippy::pedantic
+
+clippy_all:
+  cargo clippy --all -- -W clippy::pedantic
+
+clippy_fix_all:
+  cargo clippy --all --fix -- -W clippy::pedantic
