@@ -1,0 +1,26 @@
+[package]
+name = "day9"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+glam.workspace = true
+indoc.workspace = true
+itertools.workspace = true
+petgraph.workspace = true
+rayon.workspace = true
+fancy-regex.workspace = true
+miette.workspace = true
+miette_pretty.workspace = true
+parse.workspace = true
+counter.workspace = true
+
+[[bin]]
+name = "part1"
+path = "src/part1.rs"
+
+[[bin]]
+name = "part2"
+path = "src/part2.rs"

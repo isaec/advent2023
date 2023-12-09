@@ -1,6 +1,7 @@
 {
   "cSpell.words": [
     "astar",
+    "clippy",
     "fastmod",
     "graphmap",
     "indoc",
@@ -9,6 +10,7 @@
     "miette",
     "nums",
     "petgraph",
+    "seqs",
     "testwatch",
     "thiserror"
   ]

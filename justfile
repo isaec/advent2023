@@ -24,3 +24,9 @@ test_libs:
 
 testwatch_libs:
   cargo watch -x 'test --all --lib'
+
+clippy PKG:
+  cargo clippy --package {{PKG}} -- -W clippy::pedantic
+
+clippy_fix PKG:
+  cargo clippy --package {{PKG}} --fix -- -W clippy::pedantic
