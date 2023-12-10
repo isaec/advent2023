@@ -240,6 +240,19 @@ impl<T> Grid<T> {
         }
         graph
     }
+
+    pub fn show_matches(&self, matcher: impl Fn((usize, usize)) -> bool) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                if matcher((x, y)) {
+                    print!("#");
+                } else {
+                    print!(".");
+                }
+            }
+            println!();
+        }
+    }
 }
 
 pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>> {
