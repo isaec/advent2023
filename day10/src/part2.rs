@@ -1,5 +1,6 @@
 use std::{collections::HashSet, hash::Hash};
 
+use geo::{Contains, Coord, Polygon};
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
@@ -7,6 +8,7 @@ use parse::{parse_grid, Grid, Relationship};
 use petgraph::{
     algo::{all_simple_paths, dijkstra},
     graphmap::GraphMap,
+    visit::Dfs,
     Directed,
 };
 
@@ -72,41 +74,6 @@ fn parse(input: &str) -> Result<Grid<Tile>> {
     })
 }
 
-fn contained_by_raycast(
-    coord: (usize, usize),
-    grid: &Grid<Tile>,
-    pipe_coords: &HashSet<(usize, usize)>,
-) -> bool {
-    let mut hits = 0;
-    let mut hit_start = None;
-    let mut just_hit = false;
-    for x in coord.0..grid.width {
-        if pipe_coords.contains(&(x, coord.1)) {
-            let hit = grid.get(x, coord.1).unwrap();
-            if !just_hit {
-                hit_start = Some(hit);
-                just_hit = true;
-            }
-        } else {
-            just_hit = false;
-            if let Some(hit_start) = hit_start {
-                if let Ok(hit_end) = grid.get(x - 1, coord.1) {
-                    match (hit_start, hit_end) {
-                        (Tile::NorthEast, Tile::SouthWest) | (Tile::NorthWest, Tile::SouthEast) => {
-                            hits += 1;
-                        }
-                        _ => {}
-                    }
-                } else {
-                    hits += 1;
-                }
-            }
-        }
-    }
-
-    hits % 2 == 1
-}
-
 pub fn part2(input: &str) -> Result<i64> {
     let grid = parse(input)?;
     let lookup = grid.build_lookup();
@@ -150,21 +117,21 @@ pub fn part2(input: &str) -> Result<i64> {
 
     let start = lookup.get(&Tile::Start).pretty()?.first().pretty()?;
 
-    let distances = dijkstra(&graph, *start, None, |_| 1);
-    let (furthest, _) = distances
-        .iter()
-        .max_by_key(|(_, distance)| *distance)
-        .pretty()?;
+    let mut dfs = Dfs::new(&graph, *start);
+    let mut pipe_coords = vec![];
+    while let Some(next) = dfs.next(&graph) {
+        pipe_coords.push(next);
+    }
 
-    let pipe_paths: Vec<Vec<(usize, usize)>> =
-        all_simple_paths(&graph, *start, *furthest, 0, None).collect_vec();
+    let pipe = Polygon::new(
+        pipe_coords
+            .iter()
+            .map(|(x, y)| (*x as f64, *y as f64))
+            .collect(),
+        vec![],
+    );
 
-    let pipe_coords: HashSet<(usize, usize)> = pipe_paths
-        .iter()
-        .flat_map(|path| path.iter().copied())
-        .collect();
-
-    grid.show_matches(|coord| pipe_coords.contains(&coord));
+    dbg!(pipe_coords.len());
 
     let mut contained = 0;
     for x in 0..grid.width {
@@ -172,9 +139,8 @@ pub fn part2(input: &str) -> Result<i64> {
             if pipe_coords.contains(&(x, y)) {
                 continue;
             }
-            if contained_by_raycast((x, y), &grid, &pipe_coords) {
+            if pipe.contains(&Coord::from((x as f64, y as f64))) {
                 contained += 1;
-                dbg!((x, y));
             }
         }
     }

@@ -26,5 +26,6 @@ fancy-regex = "0.12.0"
 miette = { version = "5.10.0", features = ["fancy"] }
 counter = "0.5.7"
 num = "0.4.1"
+geo = "0.27.0"
 miette_pretty = { path = "miette_pretty" }
 parse = { path = "parse" }

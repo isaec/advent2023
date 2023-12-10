@@ -516,11 +516,13 @@ mod tests {
         assert_eq!(grid.width, 11);
         assert_eq!(grid.height, 6);
 
-        let graph =
-            grid.build_graph::<u64, Undirected>(&Relationship::Orthogonal, |a, b| match (a, b) {
+        let graph = grid.build_graph::<u64, Undirected>(
+            &Relationship::Orthogonal,
+            |(a, _), (b, _)| match (a, b) {
                 (Tile::Empty, Tile::Empty) => Some(1),
                 _ => None,
-            });
+            },
+        );
 
         dbg!(&graph);
 
