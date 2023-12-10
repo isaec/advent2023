@@ -215,7 +215,7 @@ impl<T> Grid<T> {
     pub fn build_graph<E, Ty>(
         &self,
         relation: &Relationship,
-        edge_map_fn: impl Fn(T, T) -> Option<E>,
+        edge_map_fn: impl Fn((T, (usize, usize)), (T, (usize, usize))) -> Option<E>,
     ) -> GraphMap<(usize, usize), E, Ty>
     where
         T: Eq + Hash + Copy + Ord,
@@ -232,7 +232,7 @@ impl<T> Grid<T> {
                 let neighbors = self.get_neighbors(x, y).expect("valid index");
                 for neighbor in neighbors.iter(&relation) {
                     let neighbor_tile = self.get_tuple(neighbor).expect("valid index");
-                    if let Some(edge) = edge_map_fn(*tile, *neighbor_tile) {
+                    if let Some(edge) = edge_map_fn((*tile, cord), (*neighbor_tile, neighbor)) {
                         graph.add_edge(cord, neighbor, edge);
                     }
                 }

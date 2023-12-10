@@ -147,6 +147,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "day10"
+version = "0.1.0"
+dependencies = [
+ "counter",
+ "fancy-regex",
+ "glam",
+ "indoc",
+ "itertools",
+ "miette",
+ "miette_pretty",
+ "parse",
+ "petgraph",
+ "rayon",
+]
+
+[[package]]
 name = "day2"
 version = "0.1.0"
 dependencies = [
