@@ -1,13 +1,12 @@
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
-use parse::{parse_grid, Grid, QuickRegex};
-use petgraph::{algo::astar, Undirected};
+use parse::parse_grid;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part2(input).unwrap());
+    dbg!(part2(input, 1_000_000).unwrap());
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, Hash, PartialOrd, Ord)]
@@ -16,65 +15,61 @@ enum Tile {
     G,
 }
 
-fn expand_empty_rows_columns(input: &str) -> String {
-    let mut rows = vec![];
-    for line in input.lines() {
-        rows.push(line);
-        if line.chars().all(|c| c == '.') {
-            for _ in 0..1000000 {
-                rows.push(line);
-            }
-        }
-    }
-
-    let new_input = rows.join("\n");
-
-    // expand the columns that are empty
-    let mut columns = vec![];
-    for x in 0..new_input.lines().next().unwrap().len() {
-        let mut column = vec![];
-        for line in new_input.lines() {
-            column.push(line.chars().nth(x).unwrap());
-        }
-        if (&column).iter().all(|c| *c == '.') {
-            for _ in 0..1000000 {
-                columns.push(column.clone());
-            }
-        }
-        columns.push(column.clone());
-    }
-
-    let mut new_input = vec![];
-    for x in 0..columns[0].len() {
-        let mut line: Vec<String> = vec![];
-        for column in &columns {
-            line.push(column[x].into());
-        }
-        new_input.push(line.join(""));
-    }
-
-    new_input.join("\n")
-}
-
-fn parse(input: &str) -> Result<Grid<Tile>> {
-    let expanded = expand_empty_rows_columns(input);
-    parse_grid(expanded.as_str(), |c| match c {
+fn parse(input: &str, expansion: usize) -> Result<Vec<(usize, usize)>> {
+    let grid = parse_grid(input, |c| match c {
         '.' => Tile::E,
         '#' => Tile::G,
         _ => panic!("invalid tile: {}", c),
-    })
+    })?;
+    let lookup = grid.build_lookup();
+    let coords = lookup.get(&Tile::G).pretty()?;
+    Ok(expand_gaps(&coords, expansion))
+}
+
+fn expand_gaps(coords: &[(usize, usize)], expansion: usize) -> Vec<(usize, usize)> {
+    let mut new_coords = vec![];
+
+    let mut last_x = 0;
+    let x_sorted_coords = coords.iter().sorted_by_key(|(x, _)| *x);
+    for (x, y) in x_sorted_coords {
+        let last_x_expanded = new_coords.last().map(|(x, _)| *x).unwrap_or(0);
+        new_coords.push((
+            last_x_expanded
+                + (x - last_x)
+                + ((x - last_x).checked_sub(1).unwrap_or(0) * expansion)
+                    .checked_sub(1)
+                    .unwrap_or(0),
+            *y,
+        ));
+        last_x = *x;
+    }
+
+    let mut final_coords = vec![];
+
+    let mut last_y = 0;
+    let y_sorted_coords = new_coords.iter().sorted_by_key(|(_, y)| *y);
+    for (x, y) in y_sorted_coords {
+        let last_y_expanded = final_coords.last().map(|(_, y)| *y).unwrap_or(0);
+        final_coords.push((
+            *x,
+            last_y_expanded
+                + (y - last_y)
+                + ((y - last_y).checked_sub(1).unwrap_or(0) * expansion)
+                    .checked_sub(1)
+                    .unwrap_or(0),
+        ));
+        last_y = *y;
+    }
+
+    final_coords
 }
 
 fn manhattan_distance(a: &(usize, usize), b: &(usize, usize)) -> i64 {
-    ((a.0 as i64 - b.0 as i64).abs() + (a.1 as i64 - b.1 as i64).abs())
+    (a.0 as i64 - b.0 as i64).abs() + (a.1 as i64 - b.1 as i64).abs()
 }
 
-pub fn part2(input: &str) -> Result<i64> {
-    let initial_grid = parse(input)?;
-    let graph: petgraph::prelude::GraphMap<(usize, usize), i32, Undirected> =
-        initial_grid.build_graph(&parse::Relationship::Orthogonal, |_, _| Some(1));
-    let lookup = initial_grid.build_lookup();
-    let hashes = lookup.get(&Tile::G).pretty()?;
+pub fn part2(input: &str, expansion: usize) -> Result<i64> {
+    let hashes = parse(input, expansion)?;
     Ok(hashes
         .iter()
         .combinations(2)
@@ -92,7 +87,7 @@ mod part2_tests {
     use indoc::indoc;
 
     #[test]
-    fn example() {
+    fn example_1mill() {
         let input = indoc! {r#"
 ...#......
 .......#..
@@ -105,11 +100,14 @@ mod part2_tests {
 .......#..
 #...#.....
 "#};
-        assert_eq!(part2(input).expect("part2 should return Ok"), 374);
+        assert_eq!(
+            part2(input, 1_000_000).expect("part2 should return Ok"),
+            82000210
+        );
     }
 
     #[test]
-    fn expand() {
+    fn example_10() {
         let input = indoc! {r#"
 ...#......
 .......#..
@@ -122,26 +120,6 @@ mod part2_tests {
 .......#..
 #...#.....
 "#};
-
-        let expected = indoc! {r#"
-....#........
-.........#...
-#............
-.............
-.............
-........#....
-.#...........
-............#
-.............
-.............
-.........#...
-#....#......."#};
-        assert_eq!(expand_empty_rows_columns(input), expected);
-    }
-
-    #[test]
-    fn input() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+        assert_eq!(part2(input, 10).expect("part2 should return Ok"), 1030);
     }
 }
