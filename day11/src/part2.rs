@@ -126,9 +126,18 @@ mod part2_tests {
     #[test]
     fn oli_example_1mill() {
         let input = include_str!("../oli_input.txt");
-        assert_eq!(
-            part2(input, 1_000_000).expect("part2 should return Ok"),
-            634324905172
-        );
+        let actual = part2(input, 1_000_000).expect("part2 should return Ok");
+        let expected = 634324905172;
+        dbg!(actual - expected);
+        assert_eq!(actual, expected,);
+    }
+
+    #[test]
+    fn seb_example_1mill() {
+        let input = include_str!("../seb_input.txt");
+        let actual = part2(input, 1_000_000).expect("part2 should return Ok");
+        let expected = 827009909817;
+        dbg!(actual - expected);
+        assert_eq!(actual, expected,);
     }
 }
