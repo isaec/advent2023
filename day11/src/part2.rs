@@ -122,4 +122,13 @@ mod part2_tests {
 "#};
         assert_eq!(part2(input, 10).expect("part2 should return Ok"), 1030);
     }
+
+    #[test]
+    fn oli_example_1mill() {
+        let input = include_str!("../oli_input.txt");
+        assert_eq!(
+            part2(input, 1_000_000).expect("part2 should return Ok"),
+            634324905172
+        );
+    }
 }
