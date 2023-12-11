@@ -36,12 +36,11 @@ fn expand_gaps(coords: &[(usize, usize)], expansion: usize) -> Vec<(usize, usize
         new_coords.push((
             last_x_expanded
                 + (x - last_x)
-                + ((x - last_x).checked_sub(1).unwrap_or(0) * expansion)
-                    .checked_sub(1)
-                    .unwrap_or(0),
+                + ((x - last_x).checked_sub(1).unwrap_or(0) * (expansion - 1)),
             *y,
         ));
         last_x = *x;
+        dbg!(new_coords.last().unwrap().0);
     }
 
     let mut final_coords = vec![];
@@ -54,9 +53,7 @@ fn expand_gaps(coords: &[(usize, usize)], expansion: usize) -> Vec<(usize, usize
             *x,
             last_y_expanded
                 + (y - last_y)
-                + ((y - last_y).checked_sub(1).unwrap_or(0) * expansion)
-                    .checked_sub(1)
-                    .unwrap_or(0),
+                + ((y - last_y).checked_sub(1).unwrap_or(0) * (expansion - 1)),
         ));
         last_y = *y;
     }
@@ -107,7 +104,7 @@ mod part2_tests {
     }
 
     #[test]
-    fn example_10() {
+    fn example_10_() {
         let input = indoc! {r#"
 ...#......
 .......#..
@@ -121,6 +118,23 @@ mod part2_tests {
 #...#.....
 "#};
         assert_eq!(part2(input, 10).expect("part2 should return Ok"), 1030);
+    }
+
+    #[test]
+    fn example_100() {
+        let input = indoc! {r#"
+...#......
+.......#..
+#.........
+..........
+......#...
+.#........
+.........#
+..........
+.......#..
+#...#.....
+"#};
+        assert_eq!(part2(input, 100).expect("part2 should return Ok"), 8410);
     }
 
     #[test]
