@@ -39,20 +39,30 @@ fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
         .try_collect()
 }
 
+#[derive(Eq, Hash, PartialEq)]
+struct CacheKey {
+    damaged_signature: Vec<usize>,
+    last_state: State,
+}
+
 fn cached_compute_possible_arrangements<'a>(
     condition_record: Vec<State>,
     contiguous_damaged_size: &[i64],
-    cache: &RefCell<HashMap<Vec<State>, i64>>,
+    cache: &RefCell<HashMap<CacheKey, i64>>,
+    cache_key: CacheKey,
 ) -> i64 {
-    if let Some(value) = cache.borrow().get(&condition_record) {
-        dbg!(value);
+    if let Some(value) = cache.borrow().get(&cache_key) {
+        // dbg!(value);
         return *value;
     }
 
-    let value =
-        compute_possible_arrangements(condition_record.clone(), contiguous_damaged_size, cache);
+    let value = compute_possible_arrangements(condition_record, contiguous_damaged_size, cache);
 
-    cache.borrow_mut().insert(condition_record, value);
+    if value == 0 {
+        return 0;
+    }
+
+    cache.borrow_mut().insert(cache_key, value);
 
     value
 }
@@ -60,37 +70,37 @@ fn cached_compute_possible_arrangements<'a>(
 fn compute_possible_arrangements(
     condition_record: Vec<State>,
     contiguous_damaged_size: &[i64],
-    cache: &RefCell<HashMap<Vec<State>, i64>>,
+    cache: &RefCell<HashMap<CacheKey, i64>>,
 ) -> i64 {
     let grouped = condition_record.iter().group_by(|s| **s);
     // dbg!(states);
 
-    let mut damaged_count = 0;
+    let mut damaged_signature = vec![];
     let contains_unknown = condition_record.contains(&State::Unknown);
     for (state, group) in grouped.into_iter() {
         if state == State::Unknown {
             break;
         }
         if state == State::Damaged {
-            let expected_size = contiguous_damaged_size.get(damaged_count);
+            let expected_size = contiguous_damaged_size.get(damaged_signature.len());
             if let Some(expected_size) = expected_size {
+                let size = group.count();
                 if contains_unknown {
-                    if group.count() > *expected_size as usize {
+                    if size > *expected_size as usize {
                         return 0;
                     }
                 } else {
-                    if group.count() != *expected_size as usize {
+                    if size != *expected_size as usize {
                         return 0;
                     }
                 }
-
-                damaged_count += 1;
+                damaged_signature.push(size);
             } else {
                 return 0;
             }
         }
     }
-    if !contains_unknown && damaged_count != contiguous_damaged_size.len() {
+    if !contains_unknown && damaged_signature.len() != contiguous_damaged_size.len() {
         return 0;
     }
 
@@ -111,10 +121,18 @@ fn compute_possible_arrangements(
                     operational_condition_record,
                     contiguous_damaged_size,
                     cache,
+                    CacheKey {
+                        damaged_signature: damaged_signature.clone(),
+                        last_state: State::Operational,
+                    },
                 ) + cached_compute_possible_arrangements(
                     damaged_condition_record,
                     contiguous_damaged_size,
                     cache,
+                    CacheKey {
+                        damaged_signature: damaged_signature.clone(),
+                        last_state: State::Damaged,
+                    },
                 );
             }
         }
@@ -128,10 +146,10 @@ pub fn part2(input: &str) -> Result<i64> {
     Ok(parsed
         .par_iter()
         .map(|(c, d)| {
-            dbg!(cached_compute_possible_arrangements(
+            dbg!(compute_possible_arrangements(
                 c.clone(),
                 d,
-                &RefCell::new(HashMap::with_capacity(10_000))
+                &RefCell::new(HashMap::new())
             ))
         })
         .sum())
@@ -152,7 +170,7 @@ mod part2_tests {
 ????.######..#####. 1,6,5
 ?###???????? 3,2,1
 "#};
-        assert_eq!(part2(input).expect("part2 should return Ok"), 21); // 525152);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 525152);
     }
 
     #[test]
