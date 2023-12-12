@@ -1,15 +1,23 @@
+use std::{
+    cell::RefCell,
+    collections::{hash_map::DefaultHasher, HashMap},
+    hash::{Hash, Hasher},
+    sync::OnceLock,
+};
+
+use dashmap::DashMap;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
-use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
     dbg!(part2(input).unwrap());
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
 enum State {
     Operational,
     Damaged,
@@ -21,7 +29,7 @@ fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
         .lines()
         .map(|l| {
             let (condition_record, contiguous_damaged_size) = l.split_once(" ").pretty()?;
-            // let condition_record = vec![condition_record].repeat(5).join("?");
+            let condition_record = vec![condition_record].repeat(5).join("?");
             let condition_record = condition_record
                 .chars()
                 .map(|c| match c {
@@ -31,15 +39,38 @@ fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
                     _ => unreachable!(),
                 })
                 .collect();
-            let contiguous_damaged_size = contiguous_damaged_size.get_digits()?; //.repeat(5);
+            let contiguous_damaged_size = contiguous_damaged_size.get_digits()?.repeat(5);
             Ok((condition_record, contiguous_damaged_size))
         })
         .try_collect()
 }
 
+fn cached_compute_possible_arrangements<'a>(
+    condition_record: Vec<State>,
+    contiguous_damaged_size: &Vec<i64>,
+    cache: &RefCell<HashMap<(Vec<State>, Vec<i64>), i64>>,
+) -> i64 {
+    if let Some(value) = cache
+        .borrow()
+        .get(&(condition_record.clone(), contiguous_damaged_size.clone()))
+    {
+        return *value;
+    }
+
+    let value =
+        compute_possible_arrangements(condition_record.clone(), contiguous_damaged_size, cache);
+
+    cache
+        .borrow_mut()
+        .insert((condition_record, contiguous_damaged_size.clone()), value);
+
+    value
+}
+
 fn compute_possible_arrangements(
     condition_record: Vec<State>,
-    contiguous_damaged_size: &[i64],
+    contiguous_damaged_size: &Vec<i64>,
+    cache: &RefCell<HashMap<(Vec<State>, Vec<i64>), i64>>,
 ) -> i64 {
     let grouped = condition_record.iter().group_by(|s| **s);
     // dbg!(states);
@@ -86,12 +117,14 @@ fn compute_possible_arrangements(
                 let mut damaged_condition_record = condition_record.clone();
                 damaged_condition_record[i] = State::Damaged;
 
-                return compute_possible_arrangements(
+                return cached_compute_possible_arrangements(
                     operational_condition_record,
                     contiguous_damaged_size,
-                ) + compute_possible_arrangements(
+                    cache,
+                ) + cached_compute_possible_arrangements(
                     damaged_condition_record,
                     contiguous_damaged_size,
+                    cache,
                 );
             }
         }
@@ -103,8 +136,14 @@ fn compute_possible_arrangements(
 pub fn part2(input: &str) -> Result<i64> {
     let parsed = parse(input)?;
     Ok(parsed
-        .iter()
-        .map(|(c, d)| dbg!(compute_possible_arrangements(c.clone(), d)))
+        .par_iter()
+        .map(|(c, d)| {
+            dbg!(cached_compute_possible_arrangements(
+                c.clone(),
+                d,
+                &RefCell::new(HashMap::with_capacity(10_000))
+            ))
+        })
         .sum())
 }
 

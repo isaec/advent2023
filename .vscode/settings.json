@@ -4,6 +4,7 @@
     "clippy",
     "fastmod",
     "graphmap",
+    "Hasher",
     "indoc",
     "itertools",
     "justfile",
