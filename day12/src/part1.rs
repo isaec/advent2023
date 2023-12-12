@@ -97,7 +97,7 @@ pub fn part1(input: &str) -> Result<i64> {
     let parsed = parse(input)?;
     Ok(parsed
         .iter()
-        .map(|(c, d)| compute_possible_arrangements(c, d))
+        .map(|(c, d)| dbg!(compute_possible_arrangements(c, d)))
         .sum())
 }
 

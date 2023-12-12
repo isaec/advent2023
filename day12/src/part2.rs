@@ -1,14 +1,16 @@
-use std::{cell::RefCell, collections::HashMap, hash::Hash};
+use std::{cell::RefCell, collections::HashMap, hash::Hash, iter::zip};
 
+use elsa::FrozenMap;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
+use petgraph::graph::Frozen;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part2(input).unwrap());
+    dbg!(part2(input, 5).unwrap());
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
@@ -18,12 +20,16 @@ enum State {
     Unknown,
 }
 
-fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
+fn parse(input: &str, repeats: usize) -> Result<Vec<(Vec<State>, Vec<u64>)>> {
     input
         .lines()
         .map(|l| {
             let (condition_record, contiguous_damaged_size) = l.split_once(" ").pretty()?;
-            let condition_record = vec![condition_record].repeat(5).join("?");
+            let condition_record = if repeats != 0 {
+                vec![condition_record].repeat(repeats).join("?")
+            } else {
+                condition_record.to_string()
+            };
             let condition_record = condition_record
                 .chars()
                 .map(|c| match c {
@@ -33,75 +39,141 @@ fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
                     _ => unreachable!(),
                 })
                 .collect();
-            let contiguous_damaged_size = contiguous_damaged_size.get_digits()?.repeat(5);
-            Ok((condition_record, contiguous_damaged_size))
+            let contiguous_damaged_size = contiguous_damaged_size
+                .get_digits()?
+                .iter()
+                .map(|v| *v as u64)
+                .collect_vec();
+            Ok((
+                condition_record,
+                if repeats != 0 {
+                    contiguous_damaged_size.repeat(repeats)
+                } else {
+                    contiguous_damaged_size
+                },
+            ))
         })
         .try_collect()
 }
 
-#[derive(Eq, Hash, PartialEq)]
+#[derive(Eq, Hash, PartialEq, Debug)]
 struct CacheKey {
-    damaged_signature: Vec<usize>,
-    last_state: State,
+    damage_signature: Vec<Damage>,
 }
 
-fn cached_compute_possible_arrangements<'a>(
+fn cached_compute_possible_arrangements(
     condition_record: Vec<State>,
-    contiguous_damaged_size: &[i64],
-    cache: &RefCell<HashMap<CacheKey, i64>>,
+    contiguous_damaged_size: &[u64],
+    cache: &FrozenMap<CacheKey, Box<i64>>,
     cache_key: CacheKey,
 ) -> i64 {
-    if let Some(value) = cache.borrow().get(&cache_key) {
+    if let Some(value) = cache.get(&cache_key) {
         // dbg!(value);
         return *value;
     }
 
     let value = compute_possible_arrangements(condition_record, contiguous_damaged_size, cache);
 
-    if value == 0 {
-        return 0;
-    }
-
-    cache.borrow_mut().insert(cache_key, value);
+    // cache.insert(cache_key, Box::new(value));
 
     value
 }
 
-fn compute_possible_arrangements(
-    condition_record: Vec<State>,
-    contiguous_damaged_size: &[i64],
-    cache: &RefCell<HashMap<CacheKey, i64>>,
-) -> i64 {
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
+enum Damage {
+    Exact(u64),
+    Range(u64, u64),
+}
+
+impl Damage {
+    fn bump_upper_bound(self, by: u64) -> Self {
+        match self {
+            Damage::Exact(size) => Damage::Range(size, size + by),
+            Damage::Range(lower, upper) => Damage::Range(lower, upper + by),
+        }
+    }
+}
+
+fn contains(damage: Damage, size: u64) -> bool {
+    match damage {
+        Damage::Exact(damage_size) => damage_size == size,
+        Damage::Range(lower, upper) => lower <= size && size <= upper,
+    }
+}
+
+fn render_states(states: &[State]) -> String {
+    states
+        .iter()
+        .map(|s| match s {
+            State::Operational => ".",
+            State::Damaged => "#",
+            State::Unknown => "?",
+        })
+        .collect()
+}
+
+fn build_damage_signature(condition_record: &Vec<State>) -> Vec<Damage> {
     let grouped = condition_record.iter().group_by(|s| **s);
     // dbg!(states);
 
-    let mut damaged_signature = vec![];
-    let contains_unknown = condition_record.contains(&State::Unknown);
+    let mut damaged_signature: Vec<Damage> = vec![];
+    let mut last = None;
     for (state, group) in grouped.into_iter() {
-        if state == State::Unknown {
-            break;
-        }
-        if state == State::Damaged {
-            let expected_size = contiguous_damaged_size.get(damaged_signature.len());
-            if let Some(expected_size) = expected_size {
-                let size = group.count();
-                if contains_unknown {
-                    if size > *expected_size as usize {
-                        return 0;
-                    }
-                } else {
-                    if size != *expected_size as usize {
-                        return 0;
-                    }
+        let size = group.count() as u64;
+        match state {
+            State::Unknown => match last {
+                Some(State::Unknown) | Some(State::Damaged) => {
+                    let last = damaged_signature.pop().unwrap();
+                    damaged_signature.push(last.bump_upper_bound(size));
                 }
-                damaged_signature.push(size);
-            } else {
-                return 0;
+                _ => break,
+            },
+            State::Damaged => {
+                if matches!(damaged_signature.last(), Some(Damage::Range(_, _))) {
+                    let last = damaged_signature.pop().unwrap();
+                    damaged_signature.push(last.bump_upper_bound(size));
+                } else {
+                    damaged_signature.push(Damage::Exact(size));
+                }
+            }
+            State::Operational => {
+                if matches!(damaged_signature.last(), Some(Damage::Range(_, _))) {
+                    break;
+                }
             }
         }
+        last = Some(state);
     }
-    if !contains_unknown && damaged_signature.len() != contiguous_damaged_size.len() {
+
+    damaged_signature
+}
+
+fn compute_possible_arrangements(
+    condition_record: Vec<State>,
+    contiguous_damaged_size: &[u64],
+    cache: &FrozenMap<CacheKey, Box<i64>>,
+) -> i64 {
+    let damaged_signature = build_damage_signature(&condition_record);
+
+    if damaged_signature.len() > contiguous_damaged_size.len() {
         return 0;
+    }
+
+    if !zip(damaged_signature.iter(), contiguous_damaged_size.iter())
+        .rev()
+        .all(|(d, c)| contains(*d, *c))
+    {
+        // dbg!((
+        //     contiguous_damaged_size,
+        //     &damaged_signature,
+        //     render_states(&condition_record),
+        //     "failed"
+        // ));
+        return 0;
+    }
+
+    if damaged_signature.len() == contiguous_damaged_size.len() {
+        return 1;
     }
 
     let mut i = 0;
@@ -114,42 +186,44 @@ fn compute_possible_arrangements(
             State::Unknown => {
                 let mut operational_condition_record = condition_record.clone();
                 operational_condition_record[i] = State::Operational;
-                let mut damaged_condition_record = condition_record;
+                let operational_damage_signature =
+                    build_damage_signature(&operational_condition_record);
+
+                let mut damaged_condition_record = condition_record.clone();
                 damaged_condition_record[i] = State::Damaged;
+                let damaged_damage_signature = build_damage_signature(&damaged_condition_record);
 
                 return cached_compute_possible_arrangements(
                     operational_condition_record,
                     contiguous_damaged_size,
                     cache,
                     CacheKey {
-                        damaged_signature: damaged_signature.clone(),
-                        last_state: State::Operational,
+                        damage_signature: operational_damage_signature,
                     },
                 ) + cached_compute_possible_arrangements(
                     damaged_condition_record,
                     contiguous_damaged_size,
                     cache,
                     CacheKey {
-                        damaged_signature: damaged_signature.clone(),
-                        last_state: State::Damaged,
+                        damage_signature: damaged_damage_signature,
                     },
                 );
             }
         }
     }
 
-    1
+    return 0;
 }
 
-pub fn part2(input: &str) -> Result<i64> {
-    let parsed = parse(input)?;
+pub fn part2(input: &str, repeats: usize) -> Result<i64> {
+    let parsed = parse(input, repeats)?;
     Ok(parsed
-        .par_iter()
+        .iter()
         .map(|(c, d)| {
             dbg!(compute_possible_arrangements(
                 c.clone(),
                 d,
-                &RefCell::new(HashMap::new())
+                &FrozenMap::new()
             ))
         })
         .sum())
@@ -170,7 +244,15 @@ mod part2_tests {
 ????.######..#####. 1,6,5
 ?###???????? 3,2,1
 "#};
-        assert_eq!(part2(input).expect("part2 should return Ok"), 525152);
+        assert_eq!(part2(input, 5).expect("part2 should return Ok"), 525152);
+    }
+
+    #[test]
+    fn example_line1() {
+        let input = indoc! {r#"
+???.### 1,1,3
+"#};
+        assert_eq!(part2(input, 1).expect("part2 should return Ok"), 1);
     }
 
     #[test]
@@ -178,12 +260,22 @@ mod part2_tests {
         let input = indoc! {r#"
 ?#?#?#?#?#?#?#? 1,3,1,6
 "#};
-        assert_eq!(part2(input).expect("part2 should return Ok"), 1);
+        assert_eq!(part2(input, 0).expect("part2 should return Ok"), 1);
     }
 
     #[test]
-    fn input() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+    fn input_line4() {
+        let input = indoc! {r#"
+?#?????##????#?? 1,9
+"#};
+        assert_eq!(part2(input, 0).expect("part2 should return Ok"), 3);
+    }
+
+    #[test]
+    fn input_line11() {
+        let input = indoc! {r#"
+?????????#?. 2,1,3
+"#};
+        assert_eq!(part2(input, 0).expect("part2 should return Ok"), 16);
     }
 }

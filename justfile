@@ -19,6 +19,10 @@ dev PKG BIN:
   # watch the example test until it passes then run the binary
   cargo watch -x 'test example --package {{PKG}} --bin {{BIN}}' -s 'cargo run --package {{PKG}} --bin {{BIN}}'
 
+dev_release PKG BIN:
+  # watch the example test until it passes then run the binary
+  cargo watch -x 'test --release example --package {{PKG}} --bin {{BIN}}' -s 'cargo run --release --package {{PKG}} --bin {{BIN}}'
+
 test_libs:
   cargo test --all --lib
 
