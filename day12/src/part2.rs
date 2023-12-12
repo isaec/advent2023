@@ -1,19 +1,111 @@
+use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
+use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
     dbg!(part2(input).unwrap());
 }
 
-fn parse(input: &str) -> Result<Vec<&str>> {
-    input.lines().map(|l| Ok(l)).collect()
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+enum State {
+    Operational,
+    Damaged,
+    Unknown,
+}
+
+fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
+    input
+        .lines()
+        .map(|l| {
+            let (condition_record, contiguous_damaged_size) = l.split_once(" ").pretty()?;
+            // let condition_record = vec![condition_record].repeat(5).join("?");
+            let condition_record = condition_record
+                .chars()
+                .map(|c| match c {
+                    '?' => State::Unknown,
+                    '.' => State::Operational,
+                    '#' => State::Damaged,
+                    _ => unreachable!(),
+                })
+                .collect();
+            let contiguous_damaged_size = contiguous_damaged_size.get_digits()?; //.repeat(5);
+            Ok((condition_record, contiguous_damaged_size))
+        })
+        .try_collect()
+}
+
+fn compute_possible_arrangements(
+    condition_record: Vec<State>,
+    contiguous_damaged_size: &[i64],
+) -> i64 {
+    let grouped = condition_record.iter().group_by(|s| **s);
+    // dbg!(states);
+
+    let mut damaged_count = 0;
+    let contains_unknown = condition_record.contains(&State::Unknown);
+    for (state, group) in grouped.into_iter() {
+        if state == State::Unknown {
+            break;
+        }
+        if state == State::Damaged {
+            let expected_size = contiguous_damaged_size.get(damaged_count);
+            if let Some(expected_size) = expected_size {
+                if contains_unknown {
+                    if group.count() > *expected_size as usize {
+                        return 0;
+                    }
+                } else {
+                    if group.count() != *expected_size as usize {
+                        return 0;
+                    }
+                }
+
+                damaged_count += 1;
+            } else {
+                return 0;
+            }
+        }
+    }
+    if !contains_unknown && damaged_count != contiguous_damaged_size.len() {
+        return 0;
+    }
+
+    let mut i = 0;
+    while i < condition_record.len() {
+        let condition = condition_record[i];
+        match condition {
+            State::Operational | State::Damaged => {
+                i += 1;
+            }
+            State::Unknown => {
+                let mut operational_condition_record = condition_record.clone();
+                operational_condition_record[i] = State::Operational;
+                let mut damaged_condition_record = condition_record.clone();
+                damaged_condition_record[i] = State::Damaged;
+
+                return compute_possible_arrangements(
+                    operational_condition_record,
+                    contiguous_damaged_size,
+                ) + compute_possible_arrangements(
+                    damaged_condition_record,
+                    contiguous_damaged_size,
+                );
+            }
+        }
+    }
+
+    1
 }
 
 pub fn part2(input: &str) -> Result<i64> {
     let parsed = parse(input)?;
-    Ok(0)
+    Ok(parsed
+        .iter()
+        .map(|(c, d)| dbg!(compute_possible_arrangements(c.clone(), d)))
+        .sum())
 }
 
 #[cfg(test)]
@@ -24,9 +116,22 @@ mod part2_tests {
     #[test]
     fn example() {
         let input = indoc! {r#"
-
+???.### 1,1,3
+.??..??...?##. 1,1,3
+?#?#?#?#?#?#?#? 1,3,1,6
+????.#...#... 4,1,1
+????.######..#####. 1,6,5
+?###???????? 3,2,1
 "#};
-        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 21); // 525152);
+    }
+
+    #[test]
+    fn example_line3() {
+        let input = indoc! {r#"
+?#?#?#?#?#?#?#? 1,3,1,6
+"#};
+        assert_eq!(part2(input).expect("part2 should return Ok"), 1);
     }
 
     #[test]
