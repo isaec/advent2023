@@ -41,30 +41,26 @@ fn parse(input: &str) -> Result<Vec<(Vec<State>, Vec<i64>)>> {
 
 fn cached_compute_possible_arrangements<'a>(
     condition_record: Vec<State>,
-    contiguous_damaged_size: &Vec<i64>,
-    cache: &RefCell<HashMap<(Vec<State>, Vec<i64>), i64>>,
+    contiguous_damaged_size: &[i64],
+    cache: &RefCell<HashMap<Vec<State>, i64>>,
 ) -> i64 {
-    if let Some(value) = cache
-        .borrow()
-        .get(&(condition_record.clone(), contiguous_damaged_size.clone()))
-    {
+    if let Some(value) = cache.borrow().get(&condition_record) {
+        dbg!(value);
         return *value;
     }
 
     let value =
         compute_possible_arrangements(condition_record.clone(), contiguous_damaged_size, cache);
 
-    cache
-        .borrow_mut()
-        .insert((condition_record, contiguous_damaged_size.clone()), value);
+    cache.borrow_mut().insert(condition_record, value);
 
     value
 }
 
 fn compute_possible_arrangements(
     condition_record: Vec<State>,
-    contiguous_damaged_size: &Vec<i64>,
-    cache: &RefCell<HashMap<(Vec<State>, Vec<i64>), i64>>,
+    contiguous_damaged_size: &[i64],
+    cache: &RefCell<HashMap<Vec<State>, i64>>,
 ) -> i64 {
     let grouped = condition_record.iter().group_by(|s| **s);
     // dbg!(states);
@@ -108,7 +104,7 @@ fn compute_possible_arrangements(
             State::Unknown => {
                 let mut operational_condition_record = condition_record.clone();
                 operational_condition_record[i] = State::Operational;
-                let mut damaged_condition_record = condition_record.clone();
+                let mut damaged_condition_record = condition_record;
                 damaged_condition_record[i] = State::Damaged;
 
                 return cached_compute_possible_arrangements(
