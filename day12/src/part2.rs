@@ -169,20 +169,20 @@ fn compute_possible_arrangements(
     contiguous_damaged_size: &[u64],
     cache: &FrozenMap<CacheKey, Box<i64>>,
 ) -> i64 {
-    // if damaged_signature.len() > contiguous_damaged_size.len() {
-    //     return 0;
-    // }
+    if damage_signature.len() > (contiguous_damaged_size.len() + 1) {
+        return 0;
+    }
 
     if !zip(damage_signature.iter(), contiguous_damaged_size.iter())
         .rev()
         .all(|(d, c)| contains(*d, *c))
     {
-        println!(
-            "failed: {:?} {:?}    {}",
-            contiguous_damaged_size,
-            &damage_signature,
-            render_states(&condition_record)
-        );
+        // println!(
+        //     "failed: {:?} {:?}    {}",
+        //     contiguous_damaged_size,
+        //     &damage_signature,
+        //     render_states(&condition_record)
+        // );
         return 0;
     }
 
