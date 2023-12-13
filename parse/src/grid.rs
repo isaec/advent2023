@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
 use miette::{Diagnostic, Result};
+use miette_pretty::Pretty;
 use petgraph::graphmap::GraphMap;
 use thiserror::Error;
 
@@ -319,7 +320,7 @@ impl<T> Grid<T> {
 }
 
 pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>> {
-    let mut data = Vec::new();
+    let mut data = Vec::with_capacity(input.len());
     let mut width = 0;
     let mut height = 0;
     for line in input.lines() {
@@ -337,9 +338,69 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
     })
 }
 
+#[macro_export]
+macro_rules! Tile {
+    ($($name:ident = $value:expr),* $(,)?) => {
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+        pub enum Tile {
+            $($name,)*
+        }
+
+        impl TryFrom<char> for Tile {
+            type Error = miette::Report;
+
+            fn try_from(c: char) -> std::result::Result<Self, Self::Error> {
+                match c {
+                    $($value => Ok(Tile::$name),)*
+                    _ => Err(miette::Report::msg(format!("None of [{patterns}] match '{c}'", patterns = stringify!($($value),*)))),
+                }
+            }
+        }
+
+        impl Debug for Tile {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                match self {
+                    $(Tile::$name => write!(f, "{v}", v = $value),)*
+                }
+            }
+        }
+
+        impl Tile {
+            #[track_caller]
+            pub fn parse_grid(input: &str) -> Result<Grid<Tile>> {
+                use miette::WrapErr;
+                let mut data = Vec::with_capacity(input.len());
+                let mut width = 0;
+                let mut height = 0;
+                for line in input.lines() {
+                    height += 1;
+                    width = 0;
+                    for c in line.chars() {
+                        width += 1;
+                        data.push(Tile::try_from(c)
+                            .wrap_err(format!("y={y} \"{line}\"", y = height - 1, line = line))
+                            .wrap_err(format!("'{c}' at ({x}, {y}) called from {line}",
+                                x = width - 1,
+                                y = height - 1,
+                                line = std::panic::Location::caller()
+                            ))?
+                        );
+                    }
+                }
+
+                Ok(Grid {
+                    data,
+                    width,
+                    height,
+                })
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
-    use std::{borrow::BorrowMut, ops::Range};
+    use std::{borrow::BorrowMut, iter::zip, ops::Range};
 
     use super::*;
     use indoc::indoc;
@@ -687,6 +748,100 @@ mod tests {
         assert_eq!(grid.reverse_index(7), (1, 2));
         assert_eq!(grid.reverse_index(8), (2, 2));
     }
+
+    #[test]
+    fn tile_macro_parses_correctly() {
+        Tile! {
+            Empty = '.',
+            Wall = '#',
+            N1 = '1',
+            N2 = '2',
+            N3 = '3',
+            N4 = '4',
+            N5 = '5',
+            N6 = '6',
+            N7 = '7',
+            N8 = '8',
+            N9 = '9',
+        }
+
+        let input = indoc! {r#"
+            ###
+            #1#
+            #..
+        "#};
+
+        let grid = Tile::parse_grid(input).unwrap();
+
+        assert_eq!(
+            grid.data,
+            vec![
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::N1,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Empty,
+                Tile::Empty,
+            ]
+        );
+    }
+
+    #[test]
+    fn tile_macro_fails_parsing_with_diagnostic() {
+        Tile! {
+            Rock = '#',
+            Ash = '.',
+        }
+
+        let input = indoc! {r#"
+            ####
+            #.1#
+            ##..
+        "#};
+
+        let (line, column, grid) = (line!(), column!() + 16, Tile::parse_grid(input));
+
+        let err = grid.unwrap_err();
+
+        for (actual, expected) in zip(
+            err.chain().map(|e| e.to_string()),
+            vec![
+                format!("'1' at (2, 1) called from parse/src/grid.rs:{line}:{column}").as_str(),
+                "y=1 \"#.1#\"",
+                "None of [\'#\', \'.\'] match '1'",
+            ],
+        ) {
+            assert_eq!(actual, expected);
+        }
+    }
+
+    #[test]
+    fn tile_macro_debug() {
+        Tile! {
+            Empty = '.',
+            Wall = '#'
+        }
+
+        let input = indoc! {r#"
+            ###
+            #.#
+            #..
+        "#};
+
+        let grid = Tile::parse_grid(input).unwrap();
+
+        dbg!(&grid);
+
+        assert_eq!(
+            format!("{grid:?}"),
+            "width=3, height=3 {\n 0\t| # # #\n 1\t| # . #\n 2\t| # . .\n}"
+        );
+    }
+
+    // proptest
 
     fn arbitrary_grid(width: usize, height: usize) -> impl Strategy<Value = Grid<&'static str>> {
         let data = prop::sample::select(
