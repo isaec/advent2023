@@ -112,7 +112,7 @@ mod tests {
     #[test]
     fn test_aoc2023_day4_input() {
         let input = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
-        let (winners, my_numbers) = input.split_once("|").expect("contains |");
+        let (winners, my_numbers) = input.split_once('|').expect("contains |");
         let winners = winners
             .get_match(r":.+")
             .expect("number section exists")

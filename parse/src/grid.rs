@@ -236,7 +236,7 @@ impl<T> Grid<T> {
                     graph.add_node(cord);
                 }
                 let neighbors = self.get_neighbors(x, y).expect("valid index");
-                for neighbor in neighbors.iter(&relation) {
+                for neighbor in neighbors.iter(relation) {
                     let neighbor_tile = self.get_tuple(neighbor).expect("valid index");
                     if let Some(edge) = edge_map_fn((*tile, cord), (*neighbor_tile, neighbor)) {
                         graph.add_edge(cord, neighbor, edge);
@@ -260,7 +260,7 @@ impl<T> Grid<T> {
         }
     }
 
-    pub fn compute_columns(&self) -> Vec<Vec<&T>> {
+    #[must_use] pub fn compute_columns(&self) -> Vec<Vec<&T>> {
         (0..self.width)
             .map(|x| {
                 (0..self.height)
@@ -270,7 +270,7 @@ impl<T> Grid<T> {
             .collect()
     }
 
-    pub fn compute_rows(&self) -> Vec<Vec<&T>> {
+    #[must_use] pub fn compute_rows(&self) -> Vec<Vec<&T>> {
         (0..self.height)
             .map(|y| {
                 (0..self.width)
@@ -626,7 +626,7 @@ mod tests {
         let grid = parse_grid(input, |c| c).unwrap();
         dbg!(&grid);
         assert_eq!(
-            format!("{:?}", grid),
+            format!("{grid:?}"),
             "width=3, height=3 {\n 0\t| 'a' 'b' 'c'\n 1\t| 'd' 'e' 'f'\n 2\t| 'g' 'h' 'i'\n}"
         );
     }
@@ -656,7 +656,7 @@ mod tests {
         dbg!(&grid);
 
         assert_eq!(
-            format!("{:?}", grid),
+            format!("{grid:?}"),
             "width=3, height=3 {\n 0\t| Wall  Wall  Wall \n 1\t| Wall  N(1)  Wall \n 2\t| Wall  Empty Empty\n}"
         );
     }
