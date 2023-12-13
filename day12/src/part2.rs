@@ -5,7 +5,7 @@ use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
-use rayon::iter::IntoParallelRefIterator;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -240,7 +240,7 @@ fn compute_possible_arrangements(
 pub fn part2(input: &str, repeats: usize) -> Result<i64> {
     let parsed = parse(input, repeats)?;
     Ok(parsed
-        .iter()
+        .par_iter()
         .map(|(c, d)| {
             dbg!(compute_possible_arrangements(
                 c.clone(),
