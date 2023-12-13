@@ -134,8 +134,8 @@ fn build_damage_signature(condition_record: &Vec<State>) -> Vec<Damage> {
         match state {
             State::Unknown => match last {
                 Some(State::Unknown) | Some(State::Damaged) => {
-                    let last = damaged_signature.pop().unwrap();
-                    damaged_signature.push(last.bump_upper_bound(size));
+                    let index = damaged_signature.len() - 1;
+                    damaged_signature[index] = damaged_signature[index].bump_upper_bound(size);
                 }
                 Some(State::Operational) => {
                     damaged_signature.push(Damage::Optional);
@@ -145,8 +145,8 @@ fn build_damage_signature(condition_record: &Vec<State>) -> Vec<Damage> {
             },
             State::Damaged => {
                 if matches!(damaged_signature.last(), Some(Damage::Range(_, _))) {
-                    let last = damaged_signature.pop().unwrap();
-                    damaged_signature.push(last.bump_upper_bound(size));
+                    let index = damaged_signature.len() - 1;
+                    damaged_signature[index] = damaged_signature[index].bump_upper_bound(size);
                 } else {
                     damaged_signature.push(Damage::Exact(size));
                 }
