@@ -5,11 +5,11 @@ use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
+use rayon::iter::IntoParallelRefIterator;
 
 fn main() {
     let input = include_str!("../input.txt");
-    // TODO: CHANGE THIS TO 5
-    dbg!(part2(input, 1).unwrap());
+    dbg!(part2(input, 5).unwrap());
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
@@ -58,6 +58,7 @@ fn parse(input: &str, repeats: usize) -> Result<Vec<(Vec<State>, Vec<u64>)>> {
 #[derive(Eq, Hash, PartialEq, Debug)]
 struct CacheKey {
     damage_signature: Vec<Damage>,
+    index: usize,
 }
 
 fn cached_compute_possible_arrangements(
@@ -67,13 +68,16 @@ fn cached_compute_possible_arrangements(
     cache_key: CacheKey,
 ) -> i64 {
     if let Some(value) = cache.get(&cache_key) {
-        // dbg!(value);
         return *value;
     }
 
     let value = compute_possible_arrangements(condition_record, contiguous_damaged_size, cache);
 
-    // cache.insert(cache_key, Box::new(value));
+    if value == 0 {
+        return 0;
+    }
+
+    cache.insert(cache_key, Box::new(value));
 
     value
 }
@@ -215,6 +219,7 @@ fn compute_possible_arrangements(
                     cache,
                     CacheKey {
                         damage_signature: operational_damage_signature,
+                        index: i,
                     },
                 ) + cached_compute_possible_arrangements(
                     damaged_condition_record,
@@ -222,6 +227,7 @@ fn compute_possible_arrangements(
                     cache,
                     CacheKey {
                         damage_signature: damaged_damage_signature,
+                        index: i,
                     },
                 );
             }
