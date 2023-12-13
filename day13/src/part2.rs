@@ -50,41 +50,32 @@ fn find_mirror(grid: &Grid<Tile>, ignore: Option<Axis>) -> Option<Axis> {
     let columns = grid.compute_columns();
     let rows = grid.compute_rows();
 
-    for mirror_x in 1..grid.width {
-        if let Some(Axis::X(ignore_x)) = ignore {
-            if mirror_x == ignore_x {
-                continue;
-            }
-        }
-        // test the left and right sides
-        if zip(
-            columns.iter().take(mirror_x).rev(),
-            columns.iter().skip(mirror_x).take(mirror_x),
+    (1..grid.width)
+        .filter(|mirror_x| !matches!(ignore, Some(Axis::X(ignore_x)) if *mirror_x == ignore_x))
+        .find(|mirror_x| {
+            zip(
+                columns.iter().take(*mirror_x).rev(),
+                columns.iter().skip(*mirror_x).take(*mirror_x),
+            )
+            .all(|(left, right)| equal(left, right))
+        })
+        .map_or_else(
+            || {
+                (1..grid.height)
+                .filter(
+                    |mirror_y| !matches!(ignore, Some(Axis::Y(ignore_y)) if *mirror_y == ignore_y),
+                )
+                .find(|mirror_y| {
+                    zip(
+                        rows.iter().take(*mirror_y).rev(),
+                        rows.iter().skip(*mirror_y).take(*mirror_y),
+                    )
+                    .all(|(top, bottom)| equal(top, bottom))
+                })
+                .map(|mirror_y| Axis::Y(mirror_y))
+            },
+            |mirror_x| Some(Axis::X(mirror_x)),
         )
-        .all(|(left, right)| equal(left, right))
-        {
-            return Some(Axis::X(mirror_x));
-        }
-    }
-
-    for mirror_y in 1..grid.height {
-        if let Some(Axis::Y(ignore_y)) = ignore {
-            if mirror_y == ignore_y {
-                continue;
-            }
-        }
-        // test the top and bottom sides
-        if zip(
-            rows.iter().take(mirror_y).rev(),
-            rows.iter().skip(mirror_y).take(mirror_y),
-        )
-        .all(|(top, bottom)| equal(top, bottom))
-        {
-            return Some(Axis::Y(mirror_y));
-        }
-    }
-
-    None
 }
 
 pub fn part2(input: &str) -> Result<usize> {
