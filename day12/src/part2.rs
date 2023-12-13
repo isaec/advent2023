@@ -1,16 +1,15 @@
-use std::{cell::RefCell, collections::HashMap, hash::Hash, iter::zip};
+use std::{hash::Hash, iter::zip};
 
 use elsa::FrozenMap;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
-use petgraph::graph::Frozen;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part2(input, 5).unwrap());
+    // TODO: CHANGE THIS TO 5
+    dbg!(part2(input, 1).unwrap());
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
@@ -172,7 +171,17 @@ fn compute_possible_arrangements(
         return 0;
     }
 
-    if damaged_signature.len() == contiguous_damaged_size.len() {
+    if damaged_signature.len() == contiguous_damaged_size.len()
+        && damaged_signature
+            .last()
+            .is_some_and(|d| matches!(d, Damage::Exact(_)))
+    {
+        // dbg!((
+        //     contiguous_damaged_size,
+        //     &damaged_signature,
+        //     render_states(&condition_record),
+        //     "passed"
+        // ));
         return 1;
     }
 
@@ -235,7 +244,7 @@ mod part2_tests {
     use indoc::indoc;
 
     #[test]
-    fn example() {
+    fn example_5x() {
         let input = indoc! {r#"
 ???.### 1,1,3
 .??..??...?##. 1,1,3
@@ -245,6 +254,19 @@ mod part2_tests {
 ?###???????? 3,2,1
 "#};
         assert_eq!(part2(input, 5).expect("part2 should return Ok"), 525152);
+    }
+
+    #[test]
+    fn example_1x() {
+        let input = indoc! {r#"
+???.### 1,1,3
+.??..??...?##. 1,1,3
+?#?#?#?#?#?#?#? 1,3,1,6
+????.#...#... 4,1,1
+????.######..#####. 1,6,5
+?###???????? 3,2,1
+"#};
+        assert_eq!(part2(input, 1).expect("part2 should return Ok"), 21);
     }
 
     #[test]
