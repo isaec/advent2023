@@ -82,6 +82,7 @@ fn cached_compute_possible_arrangements(
 enum Damage {
     Exact(u64),
     Range(u64, u64),
+    Optional,
 }
 
 impl Damage {
@@ -89,6 +90,7 @@ impl Damage {
         match self {
             Damage::Exact(size) => Damage::Range(size, size + by),
             Damage::Range(lower, upper) => Damage::Range(lower, upper + by),
+            Damage::Optional => todo!(),
         }
     }
 }
@@ -97,6 +99,7 @@ fn contains(damage: Damage, size: u64) -> bool {
     match damage {
         Damage::Exact(damage_size) => damage_size == size,
         Damage::Range(lower, upper) => lower <= size && size <= upper,
+        Damage::Optional => true,
     }
 }
 
@@ -124,6 +127,10 @@ fn build_damage_signature(condition_record: &Vec<State>) -> Vec<Damage> {
                 Some(State::Unknown) | Some(State::Damaged) => {
                     let last = damaged_signature.pop().unwrap();
                     damaged_signature.push(last.bump_upper_bound(size));
+                }
+                Some(State::Operational) => {
+                    damaged_signature.push(Damage::Optional);
+                    break;
                 }
                 _ => break,
             },
@@ -154,20 +161,20 @@ fn compute_possible_arrangements(
 ) -> i64 {
     let damaged_signature = build_damage_signature(&condition_record);
 
-    if damaged_signature.len() > contiguous_damaged_size.len() {
-        return 0;
-    }
+    // if damaged_signature.len() > contiguous_damaged_size.len() {
+    //     return 0;
+    // }
 
     if !zip(damaged_signature.iter(), contiguous_damaged_size.iter())
         .rev()
         .all(|(d, c)| contains(*d, *c))
     {
-        // dbg!((
+        // println!(
+        //     "failed: {:?} {:?}    {}",
         //     contiguous_damaged_size,
         //     &damaged_signature,
-        //     render_states(&condition_record),
-        //     "failed"
-        // ));
+        //     render_states(&condition_record)
+        // );
         return 0;
     }
 
@@ -176,12 +183,12 @@ fn compute_possible_arrangements(
             .last()
             .is_some_and(|d| matches!(d, Damage::Exact(_)))
     {
-        // dbg!((
+        // println!(
+        //     "passed: {:?} {:?}    {}",
         //     contiguous_damaged_size,
         //     &damaged_signature,
-        //     render_states(&condition_record),
-        //     "passed"
-        // ));
+        //     render_states(&condition_record)
+        // );
         return 1;
     }
 
@@ -316,6 +323,7 @@ mod part2_tests {
                     let expected = expected.lines().nth($line_number - 1).unwrap();
                     let input = format!("{}\n", input);
                     let expected = expected.parse::<i64>().unwrap();
+                    dbg!(&input);
                     assert_eq!(part2(&input, 0).expect("part2 should return Ok"), expected);
                 }
             }
