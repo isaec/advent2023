@@ -260,7 +260,8 @@ impl<T> Grid<T> {
         }
     }
 
-    #[must_use] pub fn compute_columns(&self) -> Vec<Vec<&T>> {
+    #[must_use]
+    pub fn compute_columns(&self) -> Vec<Vec<&T>> {
         (0..self.width)
             .map(|x| {
                 (0..self.height)
@@ -270,7 +271,8 @@ impl<T> Grid<T> {
             .collect()
     }
 
-    #[must_use] pub fn compute_rows(&self) -> Vec<Vec<&T>> {
+    #[must_use]
+    pub fn compute_rows(&self) -> Vec<Vec<&T>> {
         (0..self.height)
             .map(|y| {
                 (0..self.width)
@@ -337,10 +339,12 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
 
 #[cfg(test)]
 mod tests {
+    use std::{borrow::BorrowMut, ops::Range};
 
     use super::*;
     use indoc::indoc;
     use petgraph::{algo::astar, Undirected};
+    use proptest::prelude::*;
 
     #[test]
     fn test_grid() {
@@ -659,5 +663,90 @@ mod tests {
             format!("{grid:?}"),
             "width=3, height=3 {\n 0\t| Wall  Wall  Wall \n 1\t| Wall  N(1)  Wall \n 2\t| Wall  Empty Empty\n}"
         );
+    }
+
+    #[test]
+    fn test_reverse_index() {
+        let input = indoc! {r#"
+            abc
+            def
+            ghi
+        "#};
+        let grid = parse_grid(input, |c| c).unwrap();
+        assert_eq!(grid.reverse_index(0), (0, 0));
+        assert_eq!(grid.data[0], 'a');
+        assert_eq!(grid.reverse_index(1), (1, 0));
+        assert_eq!(grid.data[1], 'b');
+        assert_eq!(grid.reverse_index(2), (2, 0));
+        assert_eq!(grid.data[2], 'c');
+        assert_eq!(grid.reverse_index(3), (0, 1));
+        assert_eq!(grid.data[3], 'd');
+        assert_eq!(grid.reverse_index(4), (1, 1));
+        assert_eq!(grid.reverse_index(5), (2, 1));
+        assert_eq!(grid.reverse_index(6), (0, 2));
+        assert_eq!(grid.reverse_index(7), (1, 2));
+        assert_eq!(grid.reverse_index(8), (2, 2));
+    }
+
+    fn arbitrary_grid(width: usize, height: usize) -> impl Strategy<Value = Grid<&'static str>> {
+        let data = vec!["#", "."];
+        let data = prop::sample::select(data);
+
+        let width = 2..width;
+        let height = 2..height;
+
+        (width, height, Just(data))
+            .prop_flat_map(|(width, height, data)| {
+                let data = prop::collection::vec(data, width * height);
+                (Just(width), Just(height), data)
+            })
+            .prop_map(|(width, height, data)| Grid {
+                data,
+                width,
+                height,
+            })
+    }
+
+    fn arbitrary_grid_with_index(
+        width: usize,
+        height: usize,
+    ) -> impl Strategy<Value = (Grid<&'static str>, (usize, usize))> {
+        let grid = arbitrary_grid(width, height);
+        grid.prop_flat_map(|grid| {
+            let width = 0..grid.width;
+            let height = 0..grid.height;
+            (Just(grid), (width, height))
+        })
+    }
+
+    fn empty_grid(width: usize, height: usize) -> impl Strategy<Value = Grid<&'static str>> {
+        let width = 2..width;
+        let height = 2..height;
+
+        (width, height).prop_map(|(width, height)| Grid {
+            data: Vec::new(),
+            width,
+            height,
+        })
+    }
+
+    fn empty_grid_with_index(
+        width: usize,
+        height: usize,
+    ) -> impl Strategy<Value = (Grid<&'static str>, (usize, usize))> {
+        empty_grid(width, height).prop_flat_map(|grid| {
+            let width = 0..grid.width;
+            let height = 0..grid.height;
+            (Just(grid), (width, height))
+        })
+    }
+
+    proptest! {
+        #[test]
+        fn test_grid_index_reverse_index((grid, (x, y)) in empty_grid_with_index(100_000, 100_000)) {
+            let i = grid.index(x, y);
+            let (x2, y2) = grid.reverse_index(i);
+            assert_eq!((x, y), (x2, y2));
+        }
     }
 }

@@ -13,3 +13,6 @@ fancy-regex.workspace = true
 miette_pretty.workspace = true
 thiserror = "1.0.50"
 replace_with = "0.1.7"
+
+[dev-dependencies]
+proptest = "1.4.0"

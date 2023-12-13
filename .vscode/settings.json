@@ -11,6 +11,7 @@
     "miette",
     "nums",
     "petgraph",
+    "proptest",
     "seqs",
     "testwatch",
     "thiserror"
