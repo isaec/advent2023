@@ -144,6 +144,11 @@ impl<T> Grid<T> {
         y * self.width + x
     }
 
+    #[must_use]
+    pub fn reverse_index(&self, i: usize) -> (usize, usize) {
+        (i % self.width, i / self.width)
+    }
+
     pub fn validate(&self, x: usize, y: usize) -> Result<(), GridError> {
         if x >= self.width {
             Err(GridError::BoundsError {
@@ -302,6 +307,13 @@ impl<T> Grid<T> {
         clone.replace_at(x, y, map_fn);
         clone
     }
+
+    pub fn iter(&self) -> impl Iterator<Item = ((usize, usize), &T)> {
+        self.data
+            .iter()
+            .enumerate()
+            .map(|(i, t)| (self.reverse_index(i), t))
+    }
 }
 
 pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>> {
@@ -325,14 +337,10 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
 
 #[cfg(test)]
 mod tests {
-    use std::path::Display;
 
     use super::*;
     use indoc::indoc;
-    use petgraph::{
-        algo::{astar, dijkstra, BoundedMeasure},
-        Undirected,
-    };
+    use petgraph::{algo::astar, Undirected};
 
     #[test]
     fn test_grid() {
