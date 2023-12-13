@@ -71,7 +71,12 @@ fn cached_compute_possible_arrangements(
         return *value;
     }
 
-    let value = compute_possible_arrangements(condition_record, contiguous_damaged_size, cache);
+    let value = compute_possible_arrangements(
+        condition_record,
+        cache_key.damage_signature.clone(),
+        contiguous_damaged_size,
+        cache,
+    );
 
     if value == 0 {
         return 0;
@@ -160,37 +165,36 @@ fn build_damage_signature(condition_record: &Vec<State>) -> Vec<Damage> {
 
 fn compute_possible_arrangements(
     condition_record: Vec<State>,
+    damage_signature: Vec<Damage>,
     contiguous_damaged_size: &[u64],
     cache: &FrozenMap<CacheKey, Box<i64>>,
 ) -> i64 {
-    let damaged_signature = build_damage_signature(&condition_record);
-
     // if damaged_signature.len() > contiguous_damaged_size.len() {
     //     return 0;
     // }
 
-    if !zip(damaged_signature.iter(), contiguous_damaged_size.iter())
+    if !zip(damage_signature.iter(), contiguous_damaged_size.iter())
         .rev()
         .all(|(d, c)| contains(*d, *c))
     {
-        // println!(
-        //     "failed: {:?} {:?}    {}",
-        //     contiguous_damaged_size,
-        //     &damaged_signature,
-        //     render_states(&condition_record)
-        // );
+        println!(
+            "failed: {:?} {:?}    {}",
+            contiguous_damaged_size,
+            &damage_signature,
+            render_states(&condition_record)
+        );
         return 0;
     }
 
-    if damaged_signature.len() == contiguous_damaged_size.len()
-        && damaged_signature
+    if damage_signature.len() == contiguous_damaged_size.len()
+        && damage_signature
             .last()
             .is_some_and(|d| matches!(d, Damage::Exact(_)))
     {
         // println!(
         //     "passed: {:?} {:?}    {}",
         //     contiguous_damaged_size,
-        //     &damaged_signature,
+        //     &damage_signature,
         //     render_states(&condition_record)
         // );
         return 1;
@@ -209,7 +213,7 @@ fn compute_possible_arrangements(
                 let operational_damage_signature =
                     build_damage_signature(&operational_condition_record);
 
-                let mut damaged_condition_record = condition_record.clone();
+                let mut damaged_condition_record = condition_record;
                 damaged_condition_record[i] = State::Damaged;
                 let damaged_damage_signature = build_damage_signature(&damaged_condition_record);
 
@@ -244,6 +248,7 @@ pub fn part2(input: &str, repeats: usize) -> Result<i64> {
         .map(|(c, d)| {
             dbg!(compute_possible_arrangements(
                 c.clone(),
+                build_damage_signature(c),
                 d,
                 &FrozenMap::new()
             ))
