@@ -17,6 +17,7 @@ miette_pretty.workspace = true
 parse.workspace = true
 counter.workspace = true
 geo.workspace = true
+elsa.workspace = true
 
 [[bin]]
 name = "part1"

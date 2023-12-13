@@ -17,7 +17,11 @@ miette_pretty.workspace = true
 parse.workspace = true
 counter.workspace = true
 geo.workspace = true
-elsa = "1.9.0"
+elsa.workspace = true
+
+[dev-dependencies]
+paste = "1.0.14"
+seq-macro = "0.3.5"
 
 [[bin]]
 name = "part1"

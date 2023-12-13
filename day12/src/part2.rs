@@ -242,6 +242,7 @@ pub fn part2(input: &str, repeats: usize) -> Result<i64> {
 mod part2_tests {
     use super::*;
     use indoc::indoc;
+    use seq_macro::seq;
 
     #[test]
     fn example_5x() {
@@ -285,19 +286,44 @@ mod part2_tests {
         assert_eq!(part2(input, 0).expect("part2 should return Ok"), 1);
     }
 
-    #[test]
-    fn input_line4() {
-        let input = indoc! {r#"
-?#?????##????#?? 1,9
-"#};
-        assert_eq!(part2(input, 0).expect("part2 should return Ok"), 3);
+    //     #[test]
+    //     fn input_line4() {
+    //         let input = indoc! {r#"
+    // ?#?????##????#?? 1,9
+    // "#};
+    //         assert_eq!(part2(input, 0).expect("part2 should return Ok"), 3);
+    //     }
+
+    //     #[test]
+    //     fn input_line11() {
+    //         let input = indoc! {r#"
+    // ?????????#?. 2,1,3
+    // "#};
+    //         assert_eq!(part2(input, 0).expect("part2 should return Ok"), 16);
+    //     }
+
+    // generate a test case for specific line in input, and assert that the part2() result matches the
+    // part1 result when repeat is 0
+
+    macro_rules! generate_test_case {
+        ($line_number:literal) => {
+            paste::paste! {
+                #[test]
+                fn [<input_line $line_number>]() {
+                    let input = include_str!("../input.txt");
+                    let expected = include_str!("../part_1_results.txt");
+                    let input = input.lines().nth($line_number - 1).unwrap();
+                    let expected = expected.lines().nth($line_number - 1).unwrap();
+                    let input = format!("{}\n", input);
+                    let expected = expected.parse::<i64>().unwrap();
+                    assert_eq!(part2(&input, 0).expect("part2 should return Ok"), expected);
+                }
+            }
+        };
     }
 
-    #[test]
-    fn input_line11() {
-        let input = indoc! {r#"
-?????????#?. 2,1,3
-"#};
-        assert_eq!(part2(input, 0).expect("part2 should return Ok"), 16);
-    }
+    // call generate_test_case! for each line in input.txt
+    seq!(N in 1..=1000 {
+        generate_test_case!(N);
+    });
 }
