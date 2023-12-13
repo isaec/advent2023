@@ -253,6 +253,26 @@ impl<T> Grid<T> {
             println!();
         }
     }
+
+    pub fn compute_columns(&self) -> Vec<Vec<&T>> {
+        (0..self.width)
+            .map(|x| {
+                (0..self.height)
+                    .map(|y| self.get(x, y).expect("valid index"))
+                    .collect()
+            })
+            .collect()
+    }
+
+    pub fn compute_rows(&self) -> Vec<Vec<&T>> {
+        (0..self.height)
+            .map(|y| {
+                (0..self.width)
+                    .map(|x| self.get(x, y).expect("valid index"))
+                    .collect()
+            })
+            .collect()
+    }
 }
 
 pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>> {
