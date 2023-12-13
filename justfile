@@ -23,6 +23,10 @@ dev_release PKG BIN:
   # watch the example test until it passes then run the binary
   cargo watch -x 'test --release example --package {{PKG}} --bin {{BIN}}' -s 'cargo run --release --package {{PKG}} --bin {{BIN}}'
 
+bench PKG BIN:
+  cargo build --release --package {{PKG}} --bin {{BIN}}
+  hyperfine -N 'target/release/{{BIN}}'
+
 test_libs:
   cargo test --all --lib
 
