@@ -274,6 +274,34 @@ impl<T> Grid<T> {
             })
             .collect()
     }
+
+    pub fn set(&mut self, x: usize, y: usize, value: T) {
+        let i = self.index(x, y);
+        self.data[i] = value;
+    }
+
+    pub fn clone_set(&self, x: usize, y: usize, value: T) -> Self
+    where
+        T: Clone,
+    {
+        let mut clone = self.clone();
+        clone.set(x, y, value);
+        clone
+    }
+
+    pub fn replace_at(&mut self, x: usize, y: usize, map_fn: impl FnOnce(T) -> T) {
+        let i = self.index(x, y);
+        replace_with::replace_with_or_abort(&mut self.data[i], map_fn);
+    }
+
+    pub fn clone_replace_at(&self, x: usize, y: usize, map_fn: impl FnOnce(T) -> T) -> Self
+    where
+        T: Clone,
+    {
+        let mut clone = self.clone();
+        clone.replace_at(x, y, map_fn);
+        clone
+    }
 }
 
 pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>> {

@@ -95,15 +95,10 @@ pub fn part2(input: &str) -> Result<usize> {
             let initial_mirror = find_mirror(g, None).expect("no initial mirror found");
             for x in 0..g.width {
                 for y in 0..g.height {
-                    let mut grid: Grid<Tile> = g.clone();
-
-                    let current = grid.get(x, y).unwrap();
-                    let next = match current {
+                    let grid: Grid<Tile> = g.clone_replace_at(x, y, |t| match t {
                         Tile::Ash => Tile::Rock,
                         Tile::Rock => Tile::Ash,
-                    };
-                    let index = grid.index(x, y);
-                    grid.data[index] = next;
+                    });
 
                     if let Some(mirror) = find_mirror(&grid, Some(initial_mirror)) {
                         if mirror != initial_mirror {

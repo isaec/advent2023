@@ -798,6 +798,7 @@ dependencies = [
  "miette",
  "miette_pretty",
  "petgraph",
+ "replace_with",
  "thiserror",
 ]
 
@@ -883,6 +884,12 @@ name = "regex-syntax"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
+
+[[package]]
+name = "replace_with"
+version = "0.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3a8614ee435691de62bcffcf4a66d91b3594bf1428a5722e79103249a095690"
 
 [[package]]
 name = "robust"
