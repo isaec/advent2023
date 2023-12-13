@@ -689,8 +689,12 @@ mod tests {
     }
 
     fn arbitrary_grid(width: usize, height: usize) -> impl Strategy<Value = Grid<&'static str>> {
-        let data = vec!["#", "."];
-        let data = prop::sample::select(data);
+        let data = prop::sample::select(
+            &[
+                "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p",
+                "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
+            ][..],
+        );
 
         let width = 2..width;
         let height = 2..height;
@@ -749,5 +753,24 @@ mod tests {
             assert_eq!((x, y), (x2, y2));
         }
 
+        #[test]
+        fn get_columns_matches_manual_iteration(grid in arbitrary_grid(100, 100)) {
+            let columns = grid.compute_columns();
+            for x in 0..grid.width {
+                for y in 0..grid.height {
+                    assert_eq!(grid.get(x, y).unwrap(), columns[x][y]);
+                }
+            }
+        }
+
+        #[test]
+        fn get_rows_matches_manual_iteration(grid in arbitrary_grid(100, 100)) {
+            let rows = grid.compute_rows();
+            for y in 0..grid.height {
+                for x in 0..grid.width {
+                    assert_eq!(grid.get(x, y).unwrap(), rows[y][x]);
+                }
+            }
+        }
     }
 }
