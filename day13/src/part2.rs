@@ -5,6 +5,7 @@ use itertools::{equal, Itertools};
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::{parse_grid, Grid, QuickRegex};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -81,7 +82,7 @@ fn find_mirror(grid: &Grid<Tile>, ignore: Option<Axis>) -> Option<Axis> {
 pub fn part2(input: &str) -> Result<usize> {
     let parsed = parse(input)?;
     Ok(parsed
-        .iter()
+        .par_iter()
         .map(|g| {
             let initial_mirror = find_mirror(g, None).expect("no initial mirror found");
             g.iter()
