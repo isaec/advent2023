@@ -78,10 +78,6 @@ fn cached_compute_possible_arrangements(
         cache,
     );
 
-    if value == 0 {
-        return 0;
-    }
-
     cache.insert(cache_key, Box::new(value));
 
     value
