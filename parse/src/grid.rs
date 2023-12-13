@@ -4,6 +4,7 @@ use miette::{Diagnostic, Result};
 use petgraph::graphmap::GraphMap;
 use thiserror::Error;
 
+#[derive(Clone)]
 /// x is the column, y is the row
 pub struct Grid<T> {
     pub data: Vec<T>,
