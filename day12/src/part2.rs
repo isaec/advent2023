@@ -73,7 +73,7 @@ fn cached_compute_possible_arrangements(
 
     let value = compute_possible_arrangements(
         condition_record,
-        cache_key.damage_signature.clone(),
+        &cache_key.damage_signature,
         contiguous_damaged_size,
         cache,
     );
@@ -161,7 +161,7 @@ fn build_damage_signature(condition_record: &Vec<State>) -> Vec<Damage> {
 
 fn compute_possible_arrangements(
     condition_record: Vec<State>,
-    damage_signature: Vec<Damage>,
+    damage_signature: &Vec<Damage>,
     contiguous_damaged_size: &[u64],
     cache: &FrozenMap<CacheKey, Box<i64>>,
 ) -> i64 {
@@ -244,7 +244,7 @@ pub fn part2(input: &str, repeats: usize) -> Result<i64> {
         .map(|(c, d)| {
             dbg!(compute_possible_arrangements(
                 c.clone(),
-                build_damage_signature(c),
+                &build_damage_signature(c),
                 d,
                 &FrozenMap::new()
             ))
