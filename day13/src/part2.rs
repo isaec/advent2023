@@ -93,28 +93,19 @@ pub fn part2(input: &str) -> Result<usize> {
         .iter()
         .map(|g| {
             let initial_mirror = find_mirror(g, None).expect("no initial mirror found");
-            for x in 0..g.width {
-                for y in 0..g.height {
-                    let grid: Grid<Tile> = g.clone_replace_at(x, y, |t| match t {
+            g.iter()
+                .map(|((x, y), _)| {
+                    g.clone_replace_at(x, y, |t| match t {
                         Tile::Ash => Tile::Rock,
                         Tile::Rock => Tile::Ash,
-                    });
-
-                    if let Some(mirror) = find_mirror(&grid, Some(initial_mirror)) {
-                        if mirror != initial_mirror {
-                            return mirror;
-                        }
-                    }
-                }
-            }
-            dbg!(g);
-            unreachable!("no solution found")
+                    })
+                })
+                .find_map(|grid| find_mirror(&grid, Some(initial_mirror)))
+                .expect("no solution found")
         })
-        .map(|a| {
-            dbg!(match a {
-                Axis::Y(y) => dbg!(y) * 100,
-                Axis::X(x) => dbg!(x),
-            })
+        .map(|a| match a {
+            Axis::Y(y) => y * 100,
+            Axis::X(x) => x,
         })
         .sum())
 }
@@ -149,6 +140,6 @@ mod part2_tests {
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 31954);
     }
 }
