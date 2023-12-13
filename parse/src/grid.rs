@@ -347,7 +347,7 @@ mod tests {
     use proptest::prelude::*;
 
     #[test]
-    fn test_grid() {
+    fn grid() {
         let input = indoc! {r#"
             abc
             def
@@ -369,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_out_of_bounds() {
+    fn grid_out_of_bounds() {
         let input = indoc! {r#"
             abc
             def
@@ -387,7 +387,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_parse_enum() {
+    fn grid_parse_enum() {
         #[derive(Debug, PartialEq)]
         enum Tile {
             Empty,
@@ -424,7 +424,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_build_lookup() {
+    fn grid_build_lookup() {
         let input = indoc! {r#"
             ###
             #1#
@@ -451,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_get_neighbors() {
+    fn grid_get_neighbors() {
         let input = indoc! {r#"
             #####
             #...#
@@ -505,7 +505,7 @@ mod tests {
     }
 
     #[test]
-    fn test_neighbors_iter() {
+    fn neighbors_iter() {
         let input = indoc! {r#"
             #####
             #...#
@@ -551,7 +551,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_build_graph() {
+    fn grid_build_graph() {
         let input = indoc! {r#"
             ###########
             #....#....#
@@ -621,7 +621,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_debug() {
+    fn grid_debug() {
         let input = indoc! {r#"
             abc
             def
@@ -636,7 +636,7 @@ mod tests {
     }
 
     #[test]
-    fn test_grid_debug_enum() {
+    fn grid_debug_enum() {
         #[derive(Debug)]
         enum Tile {
             Empty,
@@ -666,7 +666,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reverse_index() {
+    fn reverse_index() {
         let input = indoc! {r#"
             abc
             def
@@ -743,10 +743,11 @@ mod tests {
 
     proptest! {
         #[test]
-        fn test_grid_index_reverse_index((grid, (x, y)) in empty_grid_with_index(100_000, 100_000)) {
+        fn grid_index_reverse_index((grid, (x, y)) in empty_grid_with_index(100_000, 100_000)) {
             let i = grid.index(x, y);
             let (x2, y2) = grid.reverse_index(i);
             assert_eq!((x, y), (x2, y2));
         }
+
     }
 }

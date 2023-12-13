@@ -75,42 +75,42 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_get_groups() {
+    fn get_groups() {
         let input = "1-3 a: abcde";
         let groups = input.get_groups(r"(\d+)-(\d+) (\w): (\w+)");
         assert_eq!(groups.unwrap(), vec!["1", "3", "a", "abcde"]);
     }
 
     #[test]
-    fn test_get_matches() {
+    fn get_matches() {
         let input = "1 12 some words10 2";
         let matches = input.get_matches(r"\d+");
         assert_eq!(matches.unwrap(), vec!["1", "12", "10", "2"]);
     }
 
     #[test]
-    fn test_get_match() {
+    fn get_match() {
         let input = "1 12 some words10 2";
         let matches = input.get_match(r"some \w+\d+");
         assert_eq!(matches.unwrap(), "some words10");
     }
 
     #[test]
-    fn test_get_matches_parsed() {
+    fn get_matches_parsed() {
         let input = "1 12 some words10 2";
         let matches = input.get_matches_parsed::<usize>(r"\d+");
         assert_eq!(matches.unwrap(), vec![1, 12, 10, 2]);
     }
 
     #[test]
-    fn test_get_digits() {
+    fn get_digits() {
         let input = "1 -10 3-3 4 words and +5";
         let digits = input.get_digits();
         assert_eq!(digits.unwrap(), vec![1, -10, 3, 3, 4, 5]);
     }
 
     #[test]
-    fn test_aoc2023_day4_input() {
+    fn aoc2023_day4_input() {
         let input = "Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53";
         let (winners, my_numbers) = input.split_once('|').expect("contains |");
         let winners = winners
@@ -158,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn test_aoc2022_day5_input() {
+    fn aoc2022_day5_input() {
         let input = indoc! {r#"
                 [D]    
             [N] [C]    
