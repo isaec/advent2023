@@ -847,6 +847,30 @@ mod tests {
     }
 
     #[test]
+    fn tile_macro_with_numbers_debug() {
+        Tile! {
+            Empty = '.',
+            Wall = '#',
+            @Number(u8)
+        }
+
+        let input = indoc! {r#"
+            ###1
+            #.#2
+            #..3
+        "#};
+
+        let grid = Tile::parse_grid(input).unwrap();
+
+        dbg!(&grid);
+
+        assert_eq!(
+            format!("{grid:?}"),
+            "width=4, height=3 {\n 0\t| # # # 1\n 1\t| # . # 2\n 2\t| # . . 3\n}"
+        );
+    }
+
+    #[test]
     fn tile_macro_generates_number_parser() {
         Tile! {
             Empty = '.',
