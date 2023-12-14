@@ -340,10 +340,11 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
 
 #[macro_export]
 macro_rules! Tile {
-    ($($name:ident = $value:expr),* $(,)?) => {
+    ($($name:ident = $value:expr),* , $(@$number_name:ident = u64,)?) => {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub enum Tile {
             $($name,)*
+            $($number_name(u64),)*
         }
 
         impl TryFrom<char> for Tile {
@@ -352,6 +353,9 @@ macro_rules! Tile {
             fn try_from(c: char) -> std::result::Result<Self, Self::Error> {
                 match c {
                     $($value => Ok(Tile::$name),)*
+                    $(
+                    _ if c.is_digit(10) => Ok(Tile::$number_name(c.to_digit(10).unwrap() as u64)),
+                    )?
                     _ => Err(miette::Report::msg(format!("None of [{patterns}] match '{c}'", patterns = stringify!($($value),*)))),
                 }
             }
@@ -361,6 +365,7 @@ macro_rules! Tile {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
                     $(Tile::$name => write!(f, "{v}", v = $value),)*
+                    $(Tile::$number_name(n) => write!(f, "{n}", n = n),)?
                 }
             }
         }
@@ -822,7 +827,7 @@ mod tests {
     fn tile_macro_debug() {
         Tile! {
             Empty = '.',
-            Wall = '#'
+            Wall = '#',
         }
 
         let input = indoc! {r#"
@@ -838,6 +843,38 @@ mod tests {
         assert_eq!(
             format!("{grid:?}"),
             "width=3, height=3 {\n 0\t| # # #\n 1\t| # . #\n 2\t| # . .\n}"
+        );
+    }
+
+    #[test]
+    fn tile_macro_generates_number_parser() {
+        Tile! {
+            Empty = '.',
+            Wall = '#',
+            @Number = u64,
+        }
+
+        let input = indoc! {r#"
+            ###
+            #1#
+            #..
+        "#};
+
+        let grid = Tile::parse_grid(input).unwrap();
+
+        assert_eq!(
+            grid.data,
+            vec![
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Number(1),
+                Tile::Wall,
+                Tile::Wall,
+                Tile::Empty,
+                Tile::Empty,
+            ]
         );
     }
 
