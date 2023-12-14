@@ -361,7 +361,7 @@ macro_rules! Tile {
             }
         }
 
-        impl Debug for Tile {
+        impl core::fmt::Debug for Tile {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
                     $(Tile::$name => write!(f, "{v}", v = $value),)*
