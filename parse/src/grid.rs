@@ -340,11 +340,11 @@ pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>>
 
 #[macro_export]
 macro_rules! Tile {
-    ($($name:ident = $value:expr),* , $(@$number_name:ident = u64,)?) => {
+    ($($name:ident = $value:expr),* ,  $(@$number_name:ident($number_type:ty))? $(,)?) => {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
         pub enum Tile {
             $($name,)*
-            $($number_name(u64),)*
+            $($number_name($number_type),)*
         }
 
         impl TryFrom<char> for Tile {
@@ -354,7 +354,7 @@ macro_rules! Tile {
                 match c {
                     $($value => Ok(Tile::$name),)*
                     $(
-                    _ if c.is_digit(10) => Ok(Tile::$number_name(c.to_digit(10).unwrap() as u64)),
+                    _ if c.is_digit(10) => Ok(Tile::$number_name(c.to_digit(10).unwrap() as $number_type)),
                     )?
                     _ => Err(miette::Report::msg(format!("None of [{patterns}] match '{c}'", patterns = stringify!($($value),*)))),
                 }
@@ -851,7 +851,7 @@ mod tests {
         Tile! {
             Empty = '.',
             Wall = '#',
-            @Number = u64,
+            @Number(u64)
         }
 
         let input = indoc! {r#"
