@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fmt::Debug, hash::Hash, iter};
 
 use miette::{Diagnostic, Result};
-use miette_pretty::Pretty;
+
 use petgraph::graphmap::GraphMap;
 use thiserror::Error;
 
@@ -183,12 +183,12 @@ impl<T> Grid<T> {
         self.get(x, y)
     }
 
-    pub fn build_lookup(&self) -> HashMap<T, Vec<(usize, usize)>>
+    #[must_use] pub fn build_lookup(&self) -> HashMap<T, Vec<(usize, usize)>>
     where
         T: Eq + Hash + Copy,
     {
         self.iter().fold(HashMap::new(), |mut acc, ((x, y), t)| {
-            acc.entry(*t).or_insert_with(Vec::new).push((x, y));
+            acc.entry(*t).or_default().push((x, y));
             acc
         })
     }
@@ -266,8 +266,8 @@ impl<T> Grid<T> {
         let (mut x, mut y) = (x as isize, y as isize);
         let (dx, dy) = direction;
         iter::from_fn(move || {
-            x = x + dx;
-            y = y + dy;
+            x += dx;
+            y += dy;
             let coord = (x as usize, y as usize);
             if self.validate(coord.0, coord.1).is_ok() {
                 Some(coord)
@@ -445,7 +445,7 @@ macro_rules! Tile {
 
 #[cfg(test)]
 mod tests {
-    use std::{borrow::BorrowMut, iter::zip, ops::Range};
+    use std::{iter::zip};
 
     use super::*;
     use indoc::indoc;
@@ -852,7 +852,7 @@ mod tests {
         let err = grid.unwrap_err();
 
         for (actual, expected) in zip(
-            err.chain().map(|e| e.to_string()),
+            err.chain().map(std::string::ToString::to_string),
             vec![
                 format!("'1' at (2, 1) called from parse/src/grid.rs:{line}:{column}").as_str(),
                 "y=1 \"#.1#\"",
