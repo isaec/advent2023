@@ -9,7 +9,7 @@ use parse::Grid;
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part1(input).unwrap());
+    dbg!(part2(input).unwrap());
 }
 
 Tile! {
@@ -175,13 +175,12 @@ fn compute_load(grid: &Grid<Tile>) -> i64 {
         .sum::<i64>()
 }
 
-pub fn part1(input: &str) -> Result<i64> {
+pub fn part2(input: &str) -> Result<i64> {
     let mut grid = parse(input)?;
     let mut grids: HashMap<_, usize> = HashMap::new();
 
     let mut i: usize = 1;
     loop {
-        let load = compute_load(&grid);
         spin_cycle(&mut grid)?;
         if let Some(prev_iter) = grids.insert(grid.clone(), i) {
             let cycle_length = i - prev_iter;
@@ -197,7 +196,7 @@ pub fn part1(input: &str) -> Result<i64> {
 }
 
 #[cfg(test)]
-mod part1_tests {
+mod part2_tests {
     use super::*;
     use indoc::indoc;
 
@@ -215,12 +214,12 @@ O.#..O.#.#
 #....###..
 #OO..#....
 "#};
-        assert_eq!(part1(input).expect("part1 should return Ok"), 64);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 64);
     }
 
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
-        assert_eq!(part1(input).expect("part1 should return Ok"), 0);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
     }
 }
