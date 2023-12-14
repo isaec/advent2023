@@ -1004,6 +1004,13 @@ mod tests {
         let counter_rotated = rotated.rotate_ccw();
 
         assert_eq!(counter_rotated, grid);
+
+        assert_eq!(grid.rotate_cw().rotate_cw().rotate_cw().rotate_cw(), grid);
+        assert_eq!(
+            grid.rotate_ccw().rotate_ccw().rotate_ccw().rotate_ccw(),
+            grid
+        );
+        assert_eq!(grid.rotate_cw().rotate_cw().rotate_cw(), grid.rotate_ccw());
     }
 
     // proptest
