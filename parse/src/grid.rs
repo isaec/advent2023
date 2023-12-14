@@ -183,7 +183,8 @@ impl<T> Grid<T> {
         self.get(x, y)
     }
 
-    #[must_use] pub fn build_lookup(&self) -> HashMap<T, Vec<(usize, usize)>>
+    #[must_use]
+    pub fn build_lookup(&self) -> HashMap<T, Vec<(usize, usize)>>
     where
         T: Eq + Hash + Copy,
     {
@@ -357,6 +358,44 @@ impl<T> Grid<T> {
             .enumerate()
             .map(|(i, t)| (self.reverse_index(i), t))
     }
+
+    pub fn rotate_cw(&self) -> Self
+    where
+        T: Clone,
+    {
+        let mut new = Grid {
+            data: Vec::with_capacity(self.data.len()),
+            width: self.height,
+            height: self.width,
+        };
+
+        for x in 0..self.width {
+            for y in (0..self.height).rev() {
+                new.data.push(self.unchecked_get(x, y).clone());
+            }
+        }
+
+        new
+    }
+
+    pub fn rotate_ccw(&self) -> Self
+    where
+        T: Clone,
+    {
+        let mut new = Grid {
+            data: Vec::with_capacity(self.data.len()),
+            width: self.height,
+            height: self.width,
+        };
+
+        for x in (0..self.width).rev() {
+            for y in 0..self.height {
+                new.data.push(self.unchecked_get(x, y).clone());
+            }
+        }
+
+        new
+    }
 }
 
 pub fn parse_grid<T>(input: &str, map_fn: impl Fn(char) -> T) -> Result<Grid<T>> {
@@ -445,7 +484,7 @@ macro_rules! Tile {
 
 #[cfg(test)]
 mod tests {
-    use std::{iter::zip};
+    use std::iter::zip;
 
     use super::*;
     use indoc::indoc;
@@ -940,6 +979,31 @@ mod tests {
                 Tile::Empty,
             ]
         );
+    }
+
+    #[test]
+    fn rotate_cw_ccw_matches_expectations() {
+        let input = indoc! {r#"
+            abcdef
+            ghijkl
+            mnopqr
+        "#};
+
+        let grid = parse_grid(input, |c| c).unwrap();
+
+        assert_eq!(grid.width, 6);
+        assert_eq!(grid.height, 3);
+
+        let rotated = grid.rotate_cw();
+
+        assert_eq!(
+            format!("{rotated:?}"),
+            "width=3, height=6 {\n 0\t| 'm' 'g' 'a'\n 1\t| 'n' 'h' 'b'\n 2\t| 'o' 'i' 'c'\n 3\t| 'p' 'j' 'd'\n 4\t| 'q' 'k' 'e'\n 5\t| 'r' 'l' 'f'\n}"
+        );
+
+        let counter_rotated = rotated.rotate_ccw();
+
+        assert_eq!(counter_rotated, grid);
     }
 
     // proptest
