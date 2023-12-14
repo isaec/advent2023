@@ -31,11 +31,11 @@ fn roll_rocks(grid: &mut Grid<Tile>) -> Result<()> {
             let b = b.1;
             a.cmp(&b)
         })
-        .sorted_by(|a, b| {
-            let a = a.0;
-            let b = b.0;
-            a.cmp(&b)
-        })
+        // .sorted_by(|a, b| {
+        //     let a = a.0;
+        //     let b = b.0;
+        //     a.cmp(&b)
+        // })
         .copied()
         .collect_vec();
 

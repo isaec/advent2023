@@ -5,7 +5,7 @@ use miette_pretty::Pretty;
 use petgraph::graphmap::GraphMap;
 use thiserror::Error;
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 /// x is the column, y is the row
 pub struct Grid<T> {
     pub data: Vec<T>,
