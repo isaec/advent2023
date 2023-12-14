@@ -21,38 +21,12 @@ fn parse(input: &str) -> Result<Grid<Tile>> {
 }
 
 fn roll_rocks(grid: &mut Grid<Tile>) -> Result<()> {
-    let lookup = grid.build_lookup();
-    let rolling = lookup.get(&Tile::Round).pretty()?;
-
-    let rolling = rolling
+    for coord in grid
+        .lookup(Tile::Round)
         .iter()
-        .sorted_by(|a, b| {
-            let a = a.1;
-            let b = b.1;
-            a.cmp(&b)
-        })
-        // .sorted_by(|a, b| {
-        //     let a = a.0;
-        //     let b = b.0;
-        //     a.cmp(&b)
-        // })
-        .copied()
-        .collect_vec();
-
-    for (x, y) in rolling {
-        grid.set(x, y, Tile::Empty);
-        let mut replaced = false;
-        for test_y in (0..y).rev() {
-            let test = grid.get(x, test_y)?;
-            if *test != Tile::Empty {
-                grid.set(x, test_y + 1, Tile::Round);
-                replaced = true;
-                break;
-            }
-        }
-        if !replaced {
-            grid.set(x, 0, Tile::Round);
-        }
+        .sorted_by(|a, b| a.1.cmp(&b.1))
+    {
+        grid.slide_while(*coord, (0, -1), |_, t| *t == Tile::Empty, Tile::Empty)?
     }
 
     Ok(())

@@ -13,6 +13,7 @@
     "nums",
     "petgraph",
     "proptest",
+    "raycast",
     "seqs",
     "testwatch",
     "thiserror"

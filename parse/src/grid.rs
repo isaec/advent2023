@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Debug, hash::Hash};
+use std::{collections::HashMap, fmt::Debug, hash::Hash, iter};
 
 use miette::{Diagnostic, Result};
 use miette_pretty::Pretty;
@@ -175,6 +175,10 @@ impl<T> Grid<T> {
         Ok(&self.data[self.index(x, y)])
     }
 
+    fn unchecked_get(&self, x: usize, y: usize) -> &T {
+        &self.data[self.index(x, y)]
+    }
+
     pub fn get_tuple(&self, (x, y): (usize, usize)) -> Result<&T> {
         self.get(x, y)
     }
@@ -254,17 +258,47 @@ impl<T> Grid<T> {
         graph
     }
 
-    pub fn show_matches(&self, matcher: impl Fn((usize, usize)) -> bool) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                if matcher((x, y)) {
-                    print!("#");
-                } else {
-                    print!(".");
-                }
+    pub fn raycast_from(
+        &self,
+        (x, y): (usize, usize),
+        direction: (isize, isize),
+    ) -> impl Iterator<Item = (usize, usize)> + '_ {
+        let (mut x, mut y) = (x as isize, y as isize);
+        let (dx, dy) = direction;
+        iter::from_fn(move || {
+            x = x + dx;
+            y = y + dy;
+            let coord = (x as usize, y as usize);
+            if self.validate(coord.0, coord.1).is_ok() {
+                Some(coord)
+            } else {
+                None
             }
-            println!();
+        })
+    }
+
+    pub fn slide_while(
+        &mut self,
+        (x, y): (usize, usize),
+        direction: (isize, isize),
+        predicate: impl Fn((usize, usize), &T) -> bool,
+        replacement: T,
+    ) -> Result<()>
+    where
+        T: Clone,
+    {
+        self.validate(x, y)?;
+        if let Some((new_x, new_y)) = self
+            .raycast_from((x, y), direction)
+            .take_while(|(x, y)| predicate((*x, *y), self.unchecked_get(*x, *y)))
+            .last()
+        {
+            let old = self.get(x, y)?.clone();
+            self.set(x, y, replacement);
+            self.set(new_x, new_y, old);
         }
+
+        Ok(())
     }
 
     #[must_use]
