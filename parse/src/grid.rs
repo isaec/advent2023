@@ -1099,5 +1099,15 @@ mod tests {
                 }
             }
         }
+
+        #[test]
+        fn rotations_line_up(grid in arbitrary_grid(50, 50)) {
+            assert_eq!(grid.rotate_cw().rotate_cw(), grid.rotate_ccw().rotate_ccw());
+            assert_eq!(grid.rotate_cw().rotate_cw().rotate_cw().rotate_cw(), grid);
+            assert_eq!(grid.rotate_ccw().rotate_ccw().rotate_ccw().rotate_ccw(), grid);
+
+            assert_eq!(grid.rotate_cw().rotate_cw().rotate_cw(), grid.rotate_ccw());
+            assert_eq!(grid.rotate_ccw().rotate_ccw().rotate_ccw(), grid.rotate_cw());
+        }
     }
 }
