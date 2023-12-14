@@ -23,8 +23,7 @@ fn parse(input: &str) -> Result<Grid<Tile>> {
 }
 
 fn roll_rocks_north(grid: &mut Grid<Tile>) -> Result<()> {
-    let lookup = grid.build_lookup();
-    let rolling = lookup.get(&Tile::Round).pretty()?;
+    let rolling = grid.lookup(Tile::Round);
 
     let rolling = rolling
         .iter()
@@ -56,8 +55,7 @@ fn roll_rocks_north(grid: &mut Grid<Tile>) -> Result<()> {
 }
 
 fn roll_rocks_west(grid: &mut Grid<Tile>) -> Result<()> {
-    let lookup = grid.build_lookup();
-    let rolling = lookup.get(&Tile::Round).pretty()?;
+    let rolling = grid.lookup(Tile::Round);
 
     let rolling = rolling
         .iter()
@@ -89,8 +87,7 @@ fn roll_rocks_west(grid: &mut Grid<Tile>) -> Result<()> {
 }
 
 fn roll_rocks_south(grid: &mut Grid<Tile>) -> Result<()> {
-    let lookup = grid.build_lookup();
-    let rolling = lookup.get(&Tile::Round).pretty()?;
+    let rolling = grid.lookup(Tile::Round);
 
     let rolling = rolling
         .iter()
@@ -122,8 +119,7 @@ fn roll_rocks_south(grid: &mut Grid<Tile>) -> Result<()> {
 }
 
 fn roll_rocks_east(grid: &mut Grid<Tile>) -> Result<()> {
-    let lookup = grid.build_lookup();
-    let rolling = lookup.get(&Tile::Round).pretty()?;
+    let rolling = grid.lookup(Tile::Round);
 
     let rolling = rolling
         .iter()
@@ -220,6 +216,6 @@ O.#..O.#.#
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
-        assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+        assert_eq!(part2(input).expect("part2 should return Ok"), 103445);
     }
 }

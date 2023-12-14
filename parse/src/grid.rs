@@ -183,14 +183,20 @@ impl<T> Grid<T> {
     where
         T: Eq + Hash + Copy,
     {
-        let mut lookup = HashMap::new();
-        for y in 0..self.height {
-            for x in 0..self.width {
-                let tile = self.get(x, y).expect("valid index");
-                lookup.entry(*tile).or_insert_with(Vec::new).push((x, y));
-            }
-        }
-        lookup
+        self.iter().fold(HashMap::new(), |mut acc, ((x, y), t)| {
+            acc.entry(*t).or_insert_with(Vec::new).push((x, y));
+            acc
+        })
+    }
+
+    pub fn lookup(&self, value: T) -> Vec<(usize, usize)>
+    where
+        T: Eq + Hash + Copy,
+    {
+        self.iter()
+            .filter(|(_, t)| **t == value)
+            .map(|((x, y), _)| (x, y))
+            .collect()
     }
 
     pub fn get_neighbors(&self, x: usize, y: usize) -> Result<Neighbors> {
