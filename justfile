@@ -13,7 +13,7 @@ run_release PKG BIN:
 new PKG:
   cp -vr template {{PKG}}
   fastmod 'template' '{{PKG}}' -- {{PKG}}/Cargo.toml
-  fastmod '^members = \[((?:.|\n)*?)\]' 'members = [${1}    "{{PKG}}"]' -- Cargo.toml
+  fastmod '^members = \[(\n)((?:.|\n)*?)\]' 'members = [${1}${2}    "{{PKG}}",${1}]' -- Cargo.toml
 
 dev PKG BIN:
   # watch the example test until it passes then run the binary
