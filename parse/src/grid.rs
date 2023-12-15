@@ -359,7 +359,7 @@ impl<T> Grid<T> {
             .map(|(i, t)| (self.reverse_index(i), t))
     }
 
-    pub fn rotate_cw(&self) -> Self
+    #[must_use] pub fn rotate_cw(&self) -> Self
     where
         T: Clone,
     {
@@ -378,7 +378,7 @@ impl<T> Grid<T> {
         new
     }
 
-    pub fn rotate_ccw(&self) -> Self
+    #[must_use] pub fn rotate_ccw(&self) -> Self
     where
         T: Clone,
     {
