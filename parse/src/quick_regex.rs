@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 
 use elsa::FrozenMap;
 use fancy_regex::Regex;
@@ -15,18 +15,19 @@ pub trait QuickRegex {
     fn get_digits(&self) -> Result<Vec<i64>>;
 }
 
-fn cached_regex_instantiate(regex: &str) -> Result<Regex> {
+fn cached_regex_instantiate(regex: &str) -> Result<Rc<Regex>> {
     thread_local! {
-        static CACHE: FrozenMap<String, Box<Regex>> = FrozenMap::new();
+        static CACHE: RefCell<HashMap<String, Rc<Regex>>> = RefCell::new(HashMap::new());
     }
 
     CACHE.with(|cache| {
-        if let Some(re) = cache.get(regex) {
-            return Ok(re.clone());
+        if let Some(re) = cache.borrow().get(regex) {
+            return Ok(Rc::clone(re));
         }
 
-        let re = Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?;
-        cache.insert(regex.to_string(), Box::new(re.clone()));
+        let re =
+            Rc::new(Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?);
+        cache.borrow_mut().insert(regex.to_string(), Rc::clone(&re));
         Ok(re)
     })
 }
