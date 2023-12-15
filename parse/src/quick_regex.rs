@@ -1,5 +1,6 @@
 use std::error::Error;
 
+use elsa::FrozenMap;
 use fancy_regex::Regex;
 use miette::Result;
 use miette_pretty::Pretty;
@@ -14,10 +15,26 @@ pub trait QuickRegex {
     fn get_digits(&self) -> Result<Vec<i64>>;
 }
 
+fn cached_regex_instantiate(regex: &str) -> Result<Regex> {
+    thread_local! {
+        static CACHE: FrozenMap<String, Box<Regex>> = FrozenMap::new();
+    }
+
+    CACHE.with(|cache| {
+        if let Some(re) = cache.get(regex) {
+            return Ok(re.clone());
+        }
+
+        let re = Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?;
+        cache.insert(regex.to_string(), Box::new(re.clone()));
+        Ok(re)
+    })
+}
+
 impl QuickRegex for str {
     #[track_caller]
     fn get_groups(&self, regex: &str) -> Result<Vec<&str>> {
-        let re = Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?;
+        let re = cached_regex_instantiate(regex)?;
         let msg = format!("regex `{regex}` capture in \"{self}\" failed to match");
         let captures = re.captures(self).pretty_msg(&msg)?.pretty_msg(&msg)?;
 
@@ -30,7 +47,7 @@ impl QuickRegex for str {
 
     #[track_caller]
     fn get_match(&self, regex: &str) -> Result<&str> {
-        let re = Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?;
+        let re = cached_regex_instantiate(regex)?;
         let msg = format!("regex `{regex}` find in \"{self}\" failed to match");
         let found = re.find(self).pretty_msg(&msg)?.pretty_msg(&msg)?;
         Ok(found.as_str())
@@ -38,7 +55,7 @@ impl QuickRegex for str {
 
     #[track_caller]
     fn get_matches(&self, regex: &str) -> Result<Vec<&str>> {
-        let re = Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?;
+        let re = cached_regex_instantiate(regex)?;
         let matches = re.find_iter(self).map(|m| m.unwrap().as_str()).collect();
         Ok(matches)
     }
@@ -48,7 +65,7 @@ impl QuickRegex for str {
     where
         <T as std::str::FromStr>::Err: Error + Send + Sync + 'static,
     {
-        let re = Regex::new(regex).pretty_msg(format!("regex `{regex}` instantiation failed"))?;
+        let re = cached_regex_instantiate(regex)?;
         let matches = re
             .find_iter(self)
             .map(|m| {

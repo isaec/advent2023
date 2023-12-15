@@ -11,6 +11,8 @@ indoc.workspace = true
 petgraph.workspace = true
 fancy-regex.workspace = true
 miette_pretty.workspace = true
+elsa.workspace = true
+itertools.workspace = true
 thiserror = "1.0.50"
 replace_with = "0.1.7"
 
