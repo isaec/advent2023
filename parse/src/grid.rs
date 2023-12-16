@@ -359,7 +359,8 @@ impl<T> Grid<T> {
             .map(|(i, t)| (self.reverse_index(i), t))
     }
 
-    #[must_use] pub fn rotate_cw(&self) -> Self
+    #[must_use]
+    pub fn rotate_cw(&self) -> Self
     where
         T: Clone,
     {
@@ -378,7 +379,8 @@ impl<T> Grid<T> {
         new
     }
 
-    #[must_use] pub fn rotate_ccw(&self) -> Self
+    #[must_use]
+    pub fn rotate_ccw(&self) -> Self
     where
         T: Clone,
     {
@@ -395,6 +397,15 @@ impl<T> Grid<T> {
         }
 
         new
+    }
+
+    pub fn visualize(&self, fun: impl Fn(&T, (usize, usize)) -> char) {
+        for y in 0..self.height {
+            for x in 0..self.width {
+                print!("{}", fun(self.unchecked_get(x, y), (x, y)));
+            }
+            println!();
+        }
     }
 }
 
