@@ -41,16 +41,14 @@ enum Direction {
 pub fn part1(input: &str) -> Result<usize> {
     let grid = parse(input)?;
     // dbg!(&grid);
-    let mut beams: Vec<((isize, isize), Direction, Uuid)> =
-        vec![((0, 0), Direction::Right, Uuid::new_v4())];
-    let mut energized: HashMap<Uuid, Box<RefCell<HashSet<(usize, usize, Direction)>>>> =
-        HashMap::new();
-    energized.insert(beams[0].2, Box::new(RefCell::new(HashSet::new())));
+    let mut beams: Vec<((isize, isize), Direction)> = vec![((0, 0), Direction::Right)];
+    let mut energized: HashSet<(usize, usize, Direction)> =
+        HashSet::with_capacity(grid.width * grid.height);
 
     while !beams.is_empty() {
         dbg!(beams.len());
         for i in 0..beams.len() {
-            let ((x, y), direction, uuid) = beams[i];
+            let ((x, y), direction) = beams[i];
             let usize_x = x.try_into();
             let usize_y = y.try_into();
             if usize_x.is_err() || usize_y.is_err() {
@@ -59,20 +57,14 @@ pub fn part1(input: &str) -> Result<usize> {
             }
             let usize_x = usize_x.unwrap();
             let usize_y = usize_y.unwrap();
-            let uuid_energized = energized.get(&uuid).pretty()?;
             if grid.validate(usize_x, usize_y).is_err()
-                || uuid_energized
-                    .borrow()
-                    .contains(&(usize_x, usize_y, direction))
+                || energized.contains(&(usize_x, usize_y, direction))
             {
                 beams.remove(i);
                 break;
             }
 
-            uuid_energized
-                .deref()
-                .borrow_mut()
-                .insert((usize_x, usize_y, direction));
+            energized.insert((usize_x, usize_y, direction));
             let current = grid.get(x as usize, y as usize)?;
 
             match (current, direction) {
@@ -81,76 +73,47 @@ pub fn part1(input: &str) -> Result<usize> {
                 | (Tile::HorizontalSplitter, Direction::Left)
                 | (Tile::VerticalSplitter, Direction::Up)
                 | (Tile::VerticalSplitter, Direction::Down) => match direction {
-                    Direction::Up => beams[i] = ((x, y - 1), direction, uuid),
-                    Direction::Down => beams[i] = ((x, y + 1), direction, uuid),
-                    Direction::Left => beams[i] = ((x - 1, y), direction, uuid),
-                    Direction::Right => beams[i] = ((x + 1, y), direction, uuid),
+                    Direction::Up => beams[i] = ((x, y - 1), direction),
+                    Direction::Down => beams[i] = ((x, y + 1), direction),
+                    Direction::Left => beams[i] = ((x - 1, y), direction),
+                    Direction::Right => beams[i] = ((x + 1, y), direction),
                 },
 
-                (Tile::SlashMirror, Direction::Up) => {
-                    beams[i] = ((x + 1, y), Direction::Right, uuid)
-                }
-                (Tile::SlashMirror, Direction::Down) => {
-                    beams[i] = ((x - 1, y), Direction::Left, uuid)
-                }
-                (Tile::SlashMirror, Direction::Left) => {
-                    beams[i] = ((x, y + 1), Direction::Down, uuid)
-                }
-                (Tile::SlashMirror, Direction::Right) => {
-                    beams[i] = ((x, y - 1), Direction::Up, uuid)
-                }
+                (Tile::SlashMirror, Direction::Up) => beams[i] = ((x + 1, y), Direction::Right),
+                (Tile::SlashMirror, Direction::Down) => beams[i] = ((x - 1, y), Direction::Left),
+                (Tile::SlashMirror, Direction::Left) => beams[i] = ((x, y + 1), Direction::Down),
+                (Tile::SlashMirror, Direction::Right) => beams[i] = ((x, y - 1), Direction::Up),
 
-                (Tile::BackslashMirror, Direction::Up) => {
-                    beams[i] = ((x - 1, y), Direction::Left, uuid)
-                }
+                (Tile::BackslashMirror, Direction::Up) => beams[i] = ((x - 1, y), Direction::Left),
                 (Tile::BackslashMirror, Direction::Down) => {
-                    beams[i] = ((x + 1, y), Direction::Right, uuid)
+                    beams[i] = ((x + 1, y), Direction::Right)
                 }
-                (Tile::BackslashMirror, Direction::Left) => {
-                    beams[i] = ((x, y - 1), Direction::Up, uuid)
-                }
+                (Tile::BackslashMirror, Direction::Left) => beams[i] = ((x, y - 1), Direction::Up),
                 (Tile::BackslashMirror, Direction::Right) => {
-                    beams[i] = ((x, y + 1), Direction::Down, uuid)
+                    beams[i] = ((x, y + 1), Direction::Down)
                 }
 
                 (Tile::HorizontalSplitter, Direction::Up) => {
-                    beams[i] = ((x - 1, y), Direction::Left, uuid);
-                    let new_uuid = Uuid::new_v4();
-                    beams.push(((x + 1, y), Direction::Right, new_uuid));
-                    let uuid_energized_clone = uuid_energized.clone();
-                    energized
-                        .borrow_mut()
-                        .insert(new_uuid, uuid_energized_clone);
+                    beams[i] = ((x - 1, y), Direction::Left);
+                    beams.push(((x + 1, y), Direction::Right));
                 }
 
                 (Tile::HorizontalSplitter, Direction::Down) => {
-                    beams[i] = ((x + 1, y), Direction::Right, uuid);
-                    let new_uuid = Uuid::new_v4();
-                    beams.push(((x - 1, y), Direction::Left, new_uuid));
-                    let uuid_energized_clone = uuid_energized.clone();
-                    energized
-                        .borrow_mut()
-                        .insert(new_uuid, uuid_energized_clone);
+                    beams[i] = ((x + 1, y), Direction::Right);
+
+                    beams.push(((x - 1, y), Direction::Left));
                 }
 
                 (Tile::VerticalSplitter, Direction::Left) => {
-                    beams[i] = ((x, y - 1), Direction::Up, uuid);
-                    let new_uuid = Uuid::new_v4();
-                    beams.push(((x, y + 1), Direction::Down, new_uuid));
-                    let uuid_energized_clone = uuid_energized.clone();
-                    energized
-                        .borrow_mut()
-                        .insert(new_uuid, uuid_energized_clone);
+                    beams[i] = ((x, y - 1), Direction::Up);
+
+                    beams.push(((x, y + 1), Direction::Down));
                 }
 
                 (Tile::VerticalSplitter, Direction::Right) => {
-                    beams[i] = ((x, y + 1), Direction::Down, uuid);
-                    let new_uuid = Uuid::new_v4();
-                    beams.push(((x, y - 1), Direction::Up, new_uuid));
-                    let uuid_energized_clone = uuid_energized.clone();
-                    energized
-                        .borrow_mut()
-                        .insert(new_uuid, uuid_energized_clone);
+                    beams[i] = ((x, y + 1), Direction::Down);
+
+                    beams.push(((x, y - 1), Direction::Up));
                 }
             }
         }
@@ -158,8 +121,8 @@ pub fn part1(input: &str) -> Result<usize> {
 
     let energized = energized.iter().fold(
         HashSet::new(),
-        |mut acc: HashSet<(usize, usize)>, (_, v)| {
-            acc.extend(v.borrow().iter().map(|(x, y, _)| (*x, *y)));
+        |mut acc: HashSet<(usize, usize)>, (x, y, _)| {
+            acc.insert((*x, *y));
             acc
         },
     );
