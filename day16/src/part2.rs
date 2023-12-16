@@ -10,7 +10,6 @@ use miette_pretty::Pretty;
 use parse::Grid;
 use parse::{QuickRegex, Tile};
 use rayon::iter::{ParallelBridge, ParallelIterator};
-use uuid::Uuid;
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -45,7 +44,6 @@ fn find_energizes(grid: G, start: ((isize, isize), Direction)) -> usize {
         HashSet::with_capacity(grid.width * grid.height);
 
     while !beams.is_empty() {
-        dbg!(beams.len());
         for i in 0..beams.len() {
             let ((x, y), direction) = beams[i];
             let usize_x = x.try_into();
