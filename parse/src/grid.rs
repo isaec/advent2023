@@ -1,5 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, hash::Hash, iter};
 
+use itertools::Itertools;
 use miette::{Diagnostic, Result};
 
 use petgraph::graphmap::GraphMap;
@@ -399,12 +400,11 @@ impl<T> Grid<T> {
         new
     }
 
-    pub fn visualize(&self, fun: impl Fn(&T, (usize, usize)) -> char) {
-        for y in 0..self.height {
-            for x in 0..self.width {
-                print!("{}", fun(self.unchecked_get(x, y), (x, y)));
-            }
-            println!();
+    pub fn map<V>(&self, fun: impl Fn(((usize, usize), &T)) -> V) -> Grid<V> {
+        Grid {
+            data: self.iter().map(fun).collect_vec(),
+            width: self.width,
+            height: self.height,
         }
     }
 }

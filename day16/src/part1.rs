@@ -1,6 +1,7 @@
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
+use std::ops::Deref;
 
 use elsa::FrozenMap;
 use itertools::Itertools;
@@ -29,7 +30,7 @@ fn parse(input: &str) -> Result<G> {
     Tile::parse_grid(input)
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Direction {
     Up,
     Down,
@@ -39,13 +40,15 @@ enum Direction {
 
 pub fn part1(input: &str) -> Result<usize> {
     let grid = parse(input)?;
-    dbg!(&grid);
+    // dbg!(&grid);
     let mut beams: Vec<((isize, isize), Direction, Uuid)> =
         vec![((0, 0), Direction::Right, Uuid::new_v4())];
-    let mut energized: FrozenMap<Uuid, Box<RefCell<HashSet<(usize, usize)>>>> = FrozenMap::new();
+    let mut energized: HashMap<Uuid, Box<RefCell<HashSet<(usize, usize, Direction)>>>> =
+        HashMap::new();
     energized.insert(beams[0].2, Box::new(RefCell::new(HashSet::new())));
 
     while !beams.is_empty() {
+        dbg!(beams.len());
         for i in 0..beams.len() {
             let ((x, y), direction, uuid) = beams[i];
             let usize_x = x.try_into();
@@ -58,19 +61,19 @@ pub fn part1(input: &str) -> Result<usize> {
             let usize_y = usize_y.unwrap();
             let uuid_energized = energized.get(&uuid).pretty()?;
             if grid.validate(usize_x, usize_y).is_err()
-                || uuid_energized.borrow().contains(&(usize_x, usize_y))
+                || uuid_energized
+                    .borrow()
+                    .contains(&(usize_x, usize_y, direction))
             {
                 beams.remove(i);
                 break;
             }
 
-            uuid_energized.borrow_mut().insert((usize_x, usize_y));
+            uuid_energized
+                .deref()
+                .borrow_mut()
+                .insert((usize_x, usize_y, direction));
             let current = grid.get(x as usize, y as usize)?;
-
-            let new_energized = uuid_energized.clone();
-            let insert_new = |uuid| {
-                energized.borrow_mut().insert(uuid, Box::new(new_energized));
-            };
 
             match (current, direction) {
                 (Tile::Empty, _)
@@ -114,42 +117,54 @@ pub fn part1(input: &str) -> Result<usize> {
                     beams[i] = ((x - 1, y), Direction::Left, uuid);
                     let new_uuid = Uuid::new_v4();
                     beams.push(((x + 1, y), Direction::Right, new_uuid));
-                    insert_new(new_uuid);
+                    let uuid_energized_clone = uuid_energized.clone();
+                    energized
+                        .borrow_mut()
+                        .insert(new_uuid, uuid_energized_clone);
                 }
 
                 (Tile::HorizontalSplitter, Direction::Down) => {
                     beams[i] = ((x + 1, y), Direction::Right, uuid);
                     let new_uuid = Uuid::new_v4();
                     beams.push(((x - 1, y), Direction::Left, new_uuid));
-                    insert_new(new_uuid);
+                    let uuid_energized_clone = uuid_energized.clone();
+                    energized
+                        .borrow_mut()
+                        .insert(new_uuid, uuid_energized_clone);
                 }
 
                 (Tile::VerticalSplitter, Direction::Left) => {
                     beams[i] = ((x, y - 1), Direction::Up, uuid);
                     let new_uuid = Uuid::new_v4();
                     beams.push(((x, y + 1), Direction::Down, new_uuid));
-                    insert_new(new_uuid);
+                    let uuid_energized_clone = uuid_energized.clone();
+                    energized
+                        .borrow_mut()
+                        .insert(new_uuid, uuid_energized_clone);
                 }
 
                 (Tile::VerticalSplitter, Direction::Right) => {
                     beams[i] = ((x, y + 1), Direction::Down, uuid);
                     let new_uuid = Uuid::new_v4();
                     beams.push(((x, y - 1), Direction::Up, new_uuid));
-                    insert_new(new_uuid);
+                    let uuid_energized_clone = uuid_energized.clone();
+                    energized
+                        .borrow_mut()
+                        .insert(new_uuid, uuid_energized_clone);
                 }
             }
         }
     }
 
-    let energized = energized.into_map().iter().fold(
+    let energized = energized.iter().fold(
         HashSet::new(),
         |mut acc: HashSet<(usize, usize)>, (_, v)| {
-            acc.extend(v.borrow().iter());
+            acc.extend(v.borrow().iter().map(|(x, y, _)| (*x, *y)));
             acc
         },
     );
 
-    grid.visualize(|_, coord| if energized.contains(&coord) { '#' } else { '.' });
+    // dbg!(grid.map(|(coord, _)| if energized.contains(&coord) { '#' } else { '.' }));
 
     Ok(energized.len())
 }
