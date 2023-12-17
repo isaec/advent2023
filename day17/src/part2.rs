@@ -5,6 +5,7 @@ use miette::Result;
 use miette_pretty::Pretty;
 use parse::{parse_grid, Grid, QuickRegex, Tile};
 use petgraph::{graphmap::GraphMap, Directed};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use strum::{self, IntoEnumIterator};
 use strum_macros::EnumIter;
 
@@ -50,7 +51,7 @@ pub fn part2(input: &str) -> Result<u64> {
     let grid = parse(input)?;
     let mut graph: GraphMap<Node, u64, Directed> = GraphMap::new();
 
-    let mut frontier = VecDeque::new();
+    let mut frontier = Vec::with_capacity(7_000);
     let origins = [
         Node {
             coord: (0, 0),
@@ -65,14 +66,18 @@ pub fn part2(input: &str) -> Result<u64> {
     ];
     for &origin in &origins {
         graph.add_node(origin);
-        frontier.push_back(origin);
+        frontier.push(origin);
     }
 
     let goal = (grid.width - 1, grid.height - 1);
 
-    while let Some(node) = frontier.pop_front() {
+    while let Some(node) = frontier.pop() {
         Direction::iter()
             .filter(|&d| !d.is_reverse(node.direction))
+            .filter(|&d| {
+                !((d == node.direction && node.steps_in_direction >= 10)
+                    || (d != node.direction && node.steps_in_direction < 4))
+            })
             .filter_map(|d| {
                 let (x, y) = node.coord;
                 let coord = match d {
@@ -84,12 +89,6 @@ pub fn part2(input: &str) -> Result<u64> {
                 };
 
                 grid.validate(coord.0, coord.1).ok()?;
-
-                if (d == node.direction && node.steps_in_direction >= 10)
-                    || (d != node.direction && node.steps_in_direction < 4)
-                {
-                    return None;
-                }
 
                 if coord == goal && !(d == node.direction && node.steps_in_direction >= 3) {
                     return None;
@@ -107,7 +106,7 @@ pub fn part2(input: &str) -> Result<u64> {
             })
             .for_each(|n| {
                 if !graph.contains_node(n) {
-                    frontier.push_back(n);
+                    frontier.push(n);
                 }
                 graph.add_node(n);
                 let cost = grid.get_tuple(n.coord).unwrap();
@@ -138,7 +137,7 @@ pub fn part2(input: &str) -> Result<u64> {
     // }
 
     origins
-        .iter()
+        .par_iter()
         .map(|&origin| {
             petgraph::algo::astar(&graph, origin, |n| n.coord == goal, |(_, _, e)| *e, |_| 0)
         })
