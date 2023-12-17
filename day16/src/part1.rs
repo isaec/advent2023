@@ -9,7 +9,6 @@ use miette::Result;
 use miette_pretty::Pretty;
 use parse::Grid;
 use parse::{QuickRegex, Tile};
-use uuid::Uuid;
 
 fn main() {
     let input = include_str!("../input.txt");
