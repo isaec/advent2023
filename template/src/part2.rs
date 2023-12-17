@@ -1,6 +1,6 @@
 use miette::Result;
 use miette_pretty::Pretty;
-use parse::QuickRegex;
+use parse::{Grid, QuickRegex, Tile};
 
 fn main() {
     let input = include_str!("../input.txt");
