@@ -115,25 +115,27 @@ pub fn part2(input: &str) -> Result<u64> {
             });
     }
 
-    for path in origins
-        .iter()
-        .map(|&origin| {
-            petgraph::algo::astar(&graph, origin, |n| n.coord == goal, |(_, _, e)| *e, |_| 0)
-        })
-        .map(|p| p.unwrap().1.iter().map(|n| n.coord).collect::<HashSet<_>>())
-    {
-        Tile! {
-            Path = '#',
-            Empty = '.',
-        }
-        dbg!(grid.map(|((x, y), _)| {
-            if path.contains(&(x, y)) {
-                Tile::Path
-            } else {
-                Tile::Empty
-            }
-        }));
-    }
+    // for (i, path) in origins
+    //     .iter()
+    //     .map(|&origin| {
+    //         petgraph::algo::astar(&graph, origin, |n| n.coord == goal, |(_, _, e)| *e, |_| 0)
+    //     })
+    //     .map(|p| p.unwrap().1.iter().map(|n| n.coord).collect::<HashSet<_>>())
+    //     .enumerate()
+    // {
+    //     Tile! {
+    //         Path = '#',
+    //         Empty = '.',
+    //     }
+    //     grid.map(|((x, y), _)| {
+    //         if path.contains(&(x, y)) {
+    //             Tile::Path
+    //         } else {
+    //             Tile::Empty
+    //         }
+    //     })
+    //     .debug_to_file(format!("path_{i}"))?;
+    // }
 
     origins
         .iter()

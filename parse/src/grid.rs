@@ -1,4 +1,9 @@
-use std::{collections::HashMap, fmt::Debug, hash::Hash, iter};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+    hash::Hash,
+    iter,
+};
 
 use itertools::Itertools;
 use miette::{Diagnostic, Result};
@@ -406,6 +411,21 @@ impl<T> Grid<T> {
             width: self.width,
             height: self.height,
         }
+    }
+
+    pub fn debug_to_file(&self, name: impl Display) -> Result<()>
+    where
+        T: Debug,
+    {
+        use miette_pretty::Pretty;
+        use std::fs::File;
+        use std::io::Write;
+
+        let path = format!("{}.txt", name);
+
+        let mut file = File::create(path).pretty_msg("creating file")?;
+        writeln!(file, "{:?}", self).pretty_msg("writing debug output")?;
+        Ok(())
     }
 }
 
