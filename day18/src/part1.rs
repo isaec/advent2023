@@ -1,11 +1,12 @@
-use geo::{Contains, Coord, Polygon};
+use geo::{Area, Contains, Coord, GeodesicArea, Polygon};
+use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::{Grid, QuickRegex, Tile};
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part1(input, 1000).unwrap());
+    dbg!(part1(input).unwrap());
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -16,7 +17,7 @@ enum Direction {
     Right,
 }
 
-fn parse(input: &str) -> Result<Vec<(Direction, usize, String)>> {
+fn parse(input: &str) -> Result<Vec<(Direction, f64, String)>> {
     input
         .lines()
         .map(|l| {
@@ -29,73 +30,39 @@ fn parse(input: &str) -> Result<Vec<(Direction, usize, String)>> {
                 _ => unreachable!(),
             };
             let (dist, color) = dist_color.trim().split_once(' ').pretty()?;
-            let dist = dist.parse().pretty_msg(format!("dist: {:?}", dist))?;
+            let dist = dist
+                .parse::<f64>()
+                .pretty_msg(format!("dist: {:?}", dist))?;
             let color = color.trim_start_matches("(#").trim_end_matches(')');
             Ok((dir, dist, color.to_string()))
         })
         .collect()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
-enum GridTile {
-    Empty,
-    Edge(String),
-    Interior,
-}
-
-pub fn part1(input: &str, grid_size: usize) -> Result<usize> {
+pub fn part1(input: &str) -> Result<u64> {
     let parsed = parse(input)?;
-    let mut grid = Grid {
-        width: grid_size,
-        height: grid_size,
-        data: vec![GridTile::Empty; grid_size * grid_size + 1],
-    };
 
-    let mut position = (grid_size / 2, grid_size / 2);
+    let mut position = (0f64, 0f64);
     let mut polygon_points = vec![position];
+    let mut boundary_points = 0;
     for (dir, dist, color) in parsed {
-        let tile = GridTile::Edge(color);
-        dbg!(position, dir, dist);
         match dir {
             Direction::Up => {
-                for y in position.1 - dist..=position.1 {
-                    grid.set(position.0, y, tile.clone());
-                }
                 position.1 -= dist;
             }
             Direction::Down => {
-                for y in position.1..=position.1 + dist {
-                    grid.set(position.0, y, tile.clone());
-                }
                 position.1 += dist;
             }
             Direction::Left => {
-                for x in position.0 - dist..position.0 {
-                    grid.set(x, position.1, tile.clone());
-                }
                 position.0 -= dist;
             }
             Direction::Right => {
-                for x in position.0..position.0 + dist {
-                    grid.set(x, position.1, tile.clone());
-                }
                 position.0 += dist;
             }
         }
+        boundary_points += dist as u64;
         polygon_points.push(position);
     }
-
-    // {
-    //     Tile! {
-    //         Empty = '.',
-    //         Fill = '#',
-    //     }
-    //     dbg!(grid.map(|(_, t)| match t {
-    //         GridTile::Empty => Tile::Empty,
-    //         GridTile::Edge(_) => Tile::Fill,
-    //         GridTile::Interior => Tile::Fill,
-    //     }));
-    // }
 
     let polygon = Polygon::new(
         polygon_points
@@ -105,14 +72,14 @@ pub fn part1(input: &str, grid_size: usize) -> Result<usize> {
         vec![],
     );
 
-    for (x, y) in grid.lookup(GridTile::Empty) {
-        if polygon.contains(&Coord::from((x as f64, y as f64))) {
-            grid.set(x, y, GridTile::Interior);
-        }
-    }
+    // use picks theorem to calculate area
 
-    Ok(grid.lookup(GridTile::Interior).len()
-        + grid.lookup_filter(|t| matches!(t, GridTile::Edge(_))).len())
+    let area = polygon.unsigned_area();
+    dbg!(boundary_points);
+    dbg!(area);
+    let interior_points = area + (boundary_points as f64 / 2.0) + 1.0;
+
+    Ok(interior_points as u64)
 }
 
 #[cfg(test)]
@@ -138,6 +105,6 @@ U 3 (#a77fa3)
 L 2 (#015232)
 U 2 (#7a21e3)
 "#};
-        assert_eq!(part1(input, 20).expect("part1 should return Ok"), 62);
+        assert_eq!(part1(input).expect("part1 should return Ok"), 62);
     }
 }
