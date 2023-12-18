@@ -4,15 +4,96 @@ use parse::{Grid, QuickRegex, Tile};
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part1(input).unwrap());
+    dbg!(part1(input, 1000).unwrap());
 }
 
-fn parse(input: &str) -> Result<Vec<&str>> {
-    input.lines().map(|l| Ok(l)).collect()
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
-pub fn part1(input: &str) -> Result<i64> {
+fn parse(input: &str) -> Result<Vec<(Direction, usize, String)>> {
+    input
+        .lines()
+        .map(|l| {
+            let (dir, dist_color) = l.split_at(1);
+            let dir = match dir {
+                "U" => Direction::Up,
+                "D" => Direction::Down,
+                "L" => Direction::Left,
+                "R" => Direction::Right,
+                _ => unreachable!(),
+            };
+            let (dist, color) = dist_color.trim().split_once(' ').pretty()?;
+            let dist = dist.parse().pretty_msg(format!("dist: {:?}", dist))?;
+            let color = color.trim_start_matches("(#").trim_end_matches(')');
+            Ok((dir, dist, color.to_string()))
+        })
+        .collect()
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+enum GridTile {
+    Empty,
+    Edge(String),
+    Interior,
+}
+
+pub fn part1(input: &str, grid_size: usize) -> Result<i64> {
     let parsed = parse(input)?;
+    let mut grid = Grid {
+        width: grid_size,
+        height: grid_size,
+        data: vec![GridTile::Empty; grid_size * grid_size + 1],
+    };
+
+    let mut position = (grid_size / 2, grid_size / 2);
+    for (dir, dist, color) in parsed {
+        let tile = GridTile::Edge(color);
+        dbg!(position, dir, dist);
+        match dir {
+            Direction::Up => {
+                for y in position.1 - dist..=position.1 {
+                    grid.set(position.0, y, tile.clone());
+                }
+                position.1 -= dist;
+            }
+            Direction::Down => {
+                for y in position.1..=position.1 + dist {
+                    grid.set(position.0, y, tile.clone());
+                }
+                position.1 += dist;
+            }
+            Direction::Left => {
+                for x in position.0 - dist..position.0 {
+                    grid.set(x, position.1, tile.clone());
+                }
+                position.0 -= dist;
+            }
+            Direction::Right => {
+                for x in position.0..position.0 + dist {
+                    grid.set(x, position.1, tile.clone());
+                }
+                position.0 += dist;
+            }
+        }
+
+        {
+            Tile! {
+                Empty = '.',
+                Fill = '#',
+            }
+            dbg!(grid.map(|(_, t)| match t {
+                GridTile::Empty => Tile::Empty,
+                GridTile::Edge(_) => Tile::Fill,
+                GridTile::Interior => Tile::Fill,
+            }));
+        }
+    }
+
     Ok(0)
 }
 
@@ -24,14 +105,21 @@ mod part1_tests {
     #[test]
     fn example() {
         let input = indoc! {r#"
-
+R 6 (#70c710)
+D 5 (#0dc571)
+L 2 (#5713f0)
+D 2 (#d2c081)
+R 2 (#59c680)
+D 2 (#411b91)
+L 5 (#8ceee2)
+U 2 (#caa173)
+L 1 (#1b58a2)
+U 2 (#caa171)
+R 2 (#7807d2)
+U 3 (#a77fa3)
+L 2 (#015232)
+U 2 (#7a21e3)
 "#};
-        assert_eq!(part1(input).expect("part1 should return Ok"), 0);
-    }
-
-    #[test]
-    fn input() {
-        let input = include_str!("../input.txt");
-        assert_eq!(part1(input).expect("part1 should return Ok"), 0);
+        assert_eq!(part1(input, 20).expect("part1 should return Ok"), 62);
     }
 }
