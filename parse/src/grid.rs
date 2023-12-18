@@ -202,10 +202,20 @@ impl<T> Grid<T> {
 
     pub fn lookup(&self, value: T) -> Vec<(usize, usize)>
     where
-        T: Eq + Hash + Copy,
+        T: Eq + Hash,
     {
         self.iter()
             .filter(|(_, t)| **t == value)
+            .map(|((x, y), _)| (x, y))
+            .collect()
+    }
+
+    pub fn lookup_filter(&self, predicate: impl Fn(&T) -> bool) -> Vec<(usize, usize)>
+    where
+        T: Eq + Hash,
+    {
+        self.iter()
+            .filter(|(_, t)| predicate(*t))
             .map(|((x, y), _)| (x, y))
             .collect()
     }

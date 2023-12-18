@@ -1,3 +1,4 @@
+use geo::{Contains, Coord, Polygon};
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::{Grid, QuickRegex, Tile};
@@ -42,7 +43,7 @@ enum GridTile {
     Interior,
 }
 
-pub fn part1(input: &str, grid_size: usize) -> Result<i64> {
+pub fn part1(input: &str, grid_size: usize) -> Result<usize> {
     let parsed = parse(input)?;
     let mut grid = Grid {
         width: grid_size,
@@ -51,6 +52,7 @@ pub fn part1(input: &str, grid_size: usize) -> Result<i64> {
     };
 
     let mut position = (grid_size / 2, grid_size / 2);
+    let mut polygon_points = vec![position];
     for (dir, dist, color) in parsed {
         let tile = GridTile::Edge(color);
         dbg!(position, dir, dist);
@@ -80,21 +82,37 @@ pub fn part1(input: &str, grid_size: usize) -> Result<i64> {
                 position.0 += dist;
             }
         }
+        polygon_points.push(position);
+    }
 
-        {
-            Tile! {
-                Empty = '.',
-                Fill = '#',
-            }
-            dbg!(grid.map(|(_, t)| match t {
-                GridTile::Empty => Tile::Empty,
-                GridTile::Edge(_) => Tile::Fill,
-                GridTile::Interior => Tile::Fill,
-            }));
+    // {
+    //     Tile! {
+    //         Empty = '.',
+    //         Fill = '#',
+    //     }
+    //     dbg!(grid.map(|(_, t)| match t {
+    //         GridTile::Empty => Tile::Empty,
+    //         GridTile::Edge(_) => Tile::Fill,
+    //         GridTile::Interior => Tile::Fill,
+    //     }));
+    // }
+
+    let polygon = Polygon::new(
+        polygon_points
+            .iter()
+            .map(|(x, y)| (*x as f64, *y as f64))
+            .collect(),
+        vec![],
+    );
+
+    for (x, y) in grid.lookup(GridTile::Empty) {
+        if polygon.contains(&Coord::from((x as f64, y as f64))) {
+            grid.set(x, y, GridTile::Interior);
         }
     }
 
-    Ok(0)
+    Ok(grid.lookup(GridTile::Interior).len()
+        + grid.lookup_filter(|t| matches!(t, GridTile::Edge(_))).len())
 }
 
 #[cfg(test)]
