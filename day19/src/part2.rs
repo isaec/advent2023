@@ -37,10 +37,10 @@ impl PartSet {
     }
 
     fn intersection(&self, other: &PartSet) -> Option<PartSet> {
-        let x = self.x.intersection(&other.x)?;
-        let m = self.m.intersection(&other.m)?;
-        let a = self.a.intersection(&other.a)?;
-        let s = self.s.intersection(&other.s)?;
+        let x = (self.x & other.x)?;
+        let m = (self.m & other.m)?;
+        let a = (self.a & other.a)?;
+        let s = (self.s & other.s)?;
         Some(PartSet { x, m, a, s })
     }
 

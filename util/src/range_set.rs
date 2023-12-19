@@ -1,3 +1,4 @@
+use paste::paste;
 use std::{fmt::Debug, fmt::Display, ops::RangeInclusive};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -138,6 +139,49 @@ impl From<RangeInclusive<u64>> for RangeSet {
     }
 }
 
+// operators
+
+macro_rules! impl_set_operator {
+    ($trait:ident, $method:ident) => {
+        paste! {
+            impl std::ops::$trait<RangeSet> for RangeSet {
+                type Output = Option<RangeSet>;
+
+                fn [<$trait:lower>](self, rhs: Self) -> Self::Output {
+                    self.$method(&rhs)
+                }
+            }
+
+            impl std::ops::$trait<&RangeSet> for RangeSet {
+                type Output = Option<RangeSet>;
+
+                fn [<$trait:lower>](self, rhs: &Self) -> Self::Output {
+                    self.$method(rhs)
+                }
+            }
+
+            impl std::ops::$trait<RangeSet> for &RangeSet {
+                type Output = Option<RangeSet>;
+
+                fn [<$trait:lower>](self, rhs: RangeSet) -> Self::Output {
+                    self.$method(&rhs)
+                }
+            }
+
+            impl std::ops::$trait<&RangeSet> for &RangeSet {
+                type Output = Option<RangeSet>;
+
+                fn [<$trait:lower>](self, rhs: &RangeSet) -> Self::Output {
+                    self.$method(rhs)
+                }
+            }
+        }
+    };
+}
+
+impl_set_operator!(BitAnd, intersection);
+impl_set_operator!(BitOr, union);
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -160,6 +204,22 @@ mod tests {
         assert_eq!(a.intersection(&f), Some(RangeSet { from: 0, to: 10 }));
         assert_eq!(a.intersection(&g), Some(RangeSet { from: 5, to: 5 }));
         assert_eq!(a.intersection(&h), None);
+    }
+
+    #[test]
+    fn range_set_overloads_work() {
+        let a = RangeSet { from: 0, to: 10 };
+        let b = RangeSet { from: 5, to: 15 };
+
+        assert_eq!(a & b, Some(RangeSet { from: 5, to: 10 }));
+        assert_eq!(a & (&b), Some(RangeSet { from: 5, to: 10 }));
+        assert_eq!((&a) & b, Some(RangeSet { from: 5, to: 10 }));
+        assert_eq!((&a) & (&b), Some(RangeSet { from: 5, to: 10 }));
+
+        assert_eq!(a | b, Some(RangeSet { from: 0, to: 15 }));
+        assert_eq!(a | (&b), Some(RangeSet { from: 0, to: 15 }));
+        assert_eq!((&a) | b, Some(RangeSet { from: 0, to: 15 }));
+        assert_eq!((&a) | (&b), Some(RangeSet { from: 0, to: 15 }));
     }
 
     #[test]
