@@ -155,10 +155,10 @@ fn parse(input: &str) -> Result<HashMap<String, Workflow>> {
 fn get_set_results(workflow: &Workflow) -> Vec<(PartSet, WorkflowResult)> {
     let mut results = vec![];
     let mut current = PartSet {
-        x: (1..=4001).into(),
-        m: (1..=4001).into(),
-        a: (1..=4001).into(),
-        s: (1..=4001).into(),
+        x: (0..=4000).into(),
+        m: (0..=4000).into(),
+        a: (0..=4000).into(),
+        s: (0..=4000).into(),
     };
 
     for step in workflow {
