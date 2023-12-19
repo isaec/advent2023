@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use elsa::vec;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
@@ -16,6 +17,12 @@ struct Part {
     m: u64,
     a: u64,
     s: u64,
+}
+
+impl Part {
+    fn sum(&self) -> u64 {
+        self.x + self.m + self.a + self.s
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -129,10 +136,56 @@ fn parse(input: &str) -> Result<(Vec<Part>, HashMap<String, Workflow>)> {
     Ok((parts, workflows))
 }
 
-pub fn part1(input: &str) -> Result<i64> {
-    let parsed = parse(input)?;
-    dbg!(parsed);
-    Ok(0)
+fn test_workflow(workflow: &Workflow, part: &Part) -> WorkflowResult {
+    for step in workflow {
+        match step {
+            WorkflowStep::Compare(category, compare, compare_value, result) => {
+                let part_value = match category {
+                    PartCategory::X => part.x,
+                    PartCategory::M => part.m,
+                    PartCategory::A => part.a,
+                    PartCategory::S => part.s,
+                };
+                match compare {
+                    Compare::LT => {
+                        if part_value < *compare_value {
+                            return result.clone();
+                        }
+                    }
+                    Compare::GT => {
+                        if part_value > *compare_value {
+                            return result.clone();
+                        }
+                    }
+                }
+            }
+            WorkflowStep::Do(result) => return result.clone(),
+        }
+    }
+    unreachable!()
+}
+
+pub fn part1(input: &str) -> Result<u64> {
+    let (parts, workflows) = parse(input)?;
+    let mut accepted = vec![];
+    for part in parts {
+        let part = part;
+        let mut workflow = &workflows["in"];
+        loop {
+            match test_workflow(workflow, &part) {
+                WorkflowResult::Accept => {
+                    accepted.push(part);
+                    break;
+                }
+                WorkflowResult::Reject => break,
+                WorkflowResult::Jump(name) => {
+                    workflow = &workflows[&name];
+                }
+            }
+        }
+    }
+
+    Ok(accepted.iter().map(|part| part.sum()).sum())
 }
 
 #[cfg(test)]
