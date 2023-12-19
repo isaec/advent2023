@@ -33,9 +33,24 @@ enum Compare {
 }
 
 #[derive(Debug, Clone)]
-enum WorkflowStep {
-    Compare(PartCategory, Compare, u64, String),
+enum WorkflowResult {
+    Accept,
+    Reject,
     Jump(String),
+}
+
+fn parse_workflow_result(input: &str) -> WorkflowResult {
+    match input {
+        "A" => WorkflowResult::Accept,
+        "R" => WorkflowResult::Reject,
+        _ => WorkflowResult::Jump(input.to_string()),
+    }
+}
+
+#[derive(Debug, Clone)]
+enum WorkflowStep {
+    Compare(PartCategory, Compare, u64, WorkflowResult),
+    Do(WorkflowResult),
 }
 
 type Workflow = Vec<WorkflowStep>;
@@ -77,8 +92,8 @@ fn parse(input: &str) -> Result<(Vec<Part>, HashMap<String, Workflow>)> {
                 .map(|detail| {
                     let split = detail.split_once(':');
                     match split {
-                        None => WorkflowStep::Jump(detail.to_string()),
-                        Some((condition, jump)) => {
+                        None => WorkflowStep::Do(parse_workflow_result(detail)),
+                        Some((condition, result)) => {
                             if condition.contains('>') {
                                 let (category, value) = condition.split_once('>').unwrap();
                                 let category = parse_category(category);
@@ -87,7 +102,7 @@ fn parse(input: &str) -> Result<(Vec<Part>, HashMap<String, Workflow>)> {
                                     category,
                                     Compare::GT,
                                     value,
-                                    jump.to_string(),
+                                    parse_workflow_result(result),
                                 )
                             } else if condition.contains('<') {
                                 let (category, value) = condition.split_once('<').unwrap();
@@ -97,7 +112,7 @@ fn parse(input: &str) -> Result<(Vec<Part>, HashMap<String, Workflow>)> {
                                     category,
                                     Compare::LT,
                                     value,
-                                    jump.to_string(),
+                                    parse_workflow_result(result),
                                 )
                             } else {
                                 unreachable!()
