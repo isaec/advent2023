@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "miette_pretty",
     "parse",
+    "util",
     "template",
     "day1",
     "day2",
@@ -39,3 +40,4 @@ geo = "0.27.0"
 elsa = "1.9.0"
 miette_pretty = { path = "miette_pretty" }
 parse = { path = "parse" }
+util = { path = "util" }

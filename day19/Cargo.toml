@@ -18,6 +18,7 @@ parse.workspace = true
 counter.workspace = true
 geo.workspace = true
 elsa.workspace = true
+util.workspace = true
 
 [[bin]]
 name = "part1"

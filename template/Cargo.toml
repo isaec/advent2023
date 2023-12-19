@@ -15,6 +15,7 @@ fancy-regex.workspace = true
 miette.workspace = true
 miette_pretty.workspace = true
 parse.workspace = true
+util.workspace = true
 counter.workspace = true
 geo.workspace = true
 elsa.workspace = true

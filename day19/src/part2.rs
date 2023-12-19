@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Debug};
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
+use util::RangeSet;
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -15,97 +16,6 @@ struct Part {
     m: u64,
     a: u64,
     s: u64,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct RangeSet {
-    from: u64,
-    to: u64,
-}
-
-impl RangeSet {
-    fn contains(&self, value: u64) -> bool {
-        value >= self.from && value <= self.to
-    }
-
-    fn intersection(&self, other: &RangeSet) -> Option<RangeSet> {
-        if self.from > other.to || self.to < other.from {
-            None
-        } else {
-            Some(RangeSet {
-                from: self.from.max(other.from),
-                to: self.to.min(other.to),
-            })
-        }
-    }
-
-    fn len(&self) -> u64 {
-        self.to - self.from + 1
-    }
-
-    fn subset_greater_than(&self, value: u64) -> Option<RangeSet> {
-        if value >= self.to {
-            None
-        } else {
-            Some(RangeSet {
-                from: value + 1,
-                to: self.to,
-            })
-        }
-    }
-
-    fn subset_less_than(&self, value: u64) -> Option<RangeSet> {
-        if value <= self.from {
-            None
-        } else {
-            Some(RangeSet {
-                from: self.from,
-                to: value - 1,
-            })
-        }
-    }
-
-    fn subset_greater_than_or_equal(&self, value: u64) -> Option<RangeSet> {
-        if value > self.to {
-            None
-        } else {
-            Some(RangeSet {
-                from: value,
-                to: self.to,
-            })
-        }
-    }
-
-    fn subset_less_than_or_equal(&self, value: u64) -> Option<RangeSet> {
-        if value < self.from {
-            None
-        } else {
-            Some(RangeSet {
-                from: self.from,
-                to: value,
-            })
-        }
-    }
-
-    fn partition_upper_inclusive(&self, value: u64) -> (Option<RangeSet>, Option<RangeSet>) {
-        (
-            self.subset_less_than(value),
-            self.subset_greater_than_or_equal(value),
-        )
-    }
-
-    fn partition_lower_inclusive(&self, value: u64) -> (Option<RangeSet>, Option<RangeSet>) {
-        (
-            self.subset_less_than_or_equal(value),
-            self.subset_greater_than(value),
-        )
-    }
-}
-
-impl Debug for RangeSet {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "RangeSet[{}, {}]", self.from, self.to)
-    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
@@ -242,42 +152,13 @@ fn parse(input: &str) -> Result<HashMap<String, Workflow>> {
     Ok(workflows)
 }
 
-// fn test_workflow(workflow: &Workflow, part: &Part) -> WorkflowResult {
-//     for step in workflow {
-//         match step {
-//             WorkflowStep::Compare(category, compare, compare_value, result) => {
-//                 let part_value = match category {
-//                     PartCategory::X => part.x,
-//                     PartCategory::M => part.m,
-//                     PartCategory::A => part.a,
-//                     PartCategory::S => part.s,
-//                 };
-//                 match compare {
-//                     Compare::LT => {
-//                         if part_value < *compare_value {
-//                             return result.clone();
-//                         }
-//                     }
-//                     Compare::GT => {
-//                         if part_value > *compare_value {
-//                             return result.clone();
-//                         }
-//                     }
-//                 }
-//             }
-//             WorkflowStep::Do(result) => return result.clone(),
-//         }
-//     }
-//     unreachable!()
-// }
-
 fn get_set_results(workflow: &Workflow) -> Vec<(PartSet, WorkflowResult)> {
     let mut results = vec![];
     let mut current = PartSet {
-        x: RangeSet { from: 0, to: 4000 },
-        m: RangeSet { from: 0, to: 4000 },
-        a: RangeSet { from: 0, to: 4000 },
-        s: RangeSet { from: 0, to: 4000 },
+        x: RangeSet::new(0, 4000),
+        m: RangeSet::new(0, 4000),
+        a: RangeSet::new(0, 4000),
+        s: RangeSet::new(0, 4000),
     };
 
     for step in workflow {
@@ -325,20 +206,6 @@ fn get_set_results(workflow: &Workflow) -> Vec<(PartSet, WorkflowResult)> {
     unreachable!()
 }
 
-// fn will_accept(workflows: &HashMap<String, Workflow>, part: &Part) -> bool {
-//     let part = part;
-//     let mut workflow = &workflows["in"];
-//     loop {
-//         match test_workflow(workflow, &part) {
-//             WorkflowResult::Accept => return true,
-//             WorkflowResult::Reject => return false,
-//             WorkflowResult::Jump(name) => {
-//                 workflow = &workflows[&name];
-//             }
-//         }
-//     }
-// }
-
 pub fn part2(input: &str) -> Result<u64> {
     let workflows = parse(input)?;
 
@@ -352,10 +219,10 @@ pub fn part2(input: &str) -> Result<u64> {
 
     let mut part_sets = vec![(
         PartSet {
-            x: RangeSet { from: 1, to: 4001 },
-            m: RangeSet { from: 1, to: 4001 },
-            a: RangeSet { from: 1, to: 4001 },
-            s: RangeSet { from: 1, to: 4001 },
+            x: RangeSet::new(1, 4001),
+            m: RangeSet::new(1, 4001),
+            a: RangeSet::new(1, 4001),
+            s: RangeSet::new(1, 4001),
         },
         "in",
     )];
@@ -363,22 +230,22 @@ pub fn part2(input: &str) -> Result<u64> {
     let mut accepted = vec![];
 
     while let Some((part_set, to_be_applied)) = part_sets.pop() {
-        dbg!(("pop", to_be_applied, &part_set));
+        // dbg!(("pop", to_be_applied, &part_set));
         let results = &workflows[to_be_applied];
         for (new_part_set, result) in results {
-            dbg!(("results", &new_part_set));
+            // dbg!(("results", &new_part_set));
             let new_part_set = part_set.intersection(new_part_set);
             if let Some(new_part_set) = new_part_set {
                 match result {
                     WorkflowResult::Accept => {
-                        dbg!(("accept", to_be_applied, &new_part_set));
+                        // dbg!(("accept", to_be_applied, &new_part_set));
                         accepted.push(new_part_set);
                     }
                     WorkflowResult::Reject => {
-                        dbg!(("reject", to_be_applied, &new_part_set));
+                        // dbg!(("reject", to_be_applied, &new_part_set));
                     }
                     WorkflowResult::Jump(name) => {
-                        dbg!(("jump", name, &new_part_set));
+                        // dbg!(("jump", name, &new_part_set));
                         part_sets.push((new_part_set, name));
                     }
                 }
@@ -427,25 +294,5 @@ hdj{m>838:A,pv}
     fn input() {
         let input = include_str!("../input.txt");
         assert_eq!(part2(input).expect("part2 should return Ok"), 0);
-    }
-
-    #[test]
-    fn range_set_intersection_works() {
-        let a = RangeSet { from: 0, to: 10 };
-        let b = RangeSet { from: 5, to: 15 };
-        let c = RangeSet { from: 0, to: 5 };
-        let d = RangeSet { from: 10, to: 15 };
-        let e = RangeSet { from: 5, to: 10 };
-        let f = RangeSet { from: 0, to: 15 };
-        let g = RangeSet { from: 5, to: 5 };
-        let h = RangeSet { from: 15, to: 15 };
-
-        assert_eq!(a.intersection(&b), Some(RangeSet { from: 5, to: 10 }));
-        assert_eq!(a.intersection(&c), Some(RangeSet { from: 0, to: 5 }));
-        assert_eq!(a.intersection(&d), Some(RangeSet { from: 10, to: 10 }));
-        assert_eq!(a.intersection(&e), Some(RangeSet { from: 5, to: 10 }));
-        assert_eq!(a.intersection(&f), Some(RangeSet { from: 0, to: 10 }));
-        assert_eq!(a.intersection(&g), Some(RangeSet { from: 5, to: 5 }));
-        assert_eq!(a.intersection(&h), None);
     }
 }
