@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt::Debug};
 
 use itertools::Itertools;
 use miette::Result;
@@ -17,7 +17,7 @@ struct Part {
     s: u64,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct RangeSet {
     from: u64,
     to: u64,
@@ -37,6 +37,10 @@ impl RangeSet {
                 to: self.to.min(other.to),
             })
         }
+    }
+
+    fn len(&self) -> u64 {
+        self.to - self.from + 1
     }
 
     fn subset_greater_than(&self, value: u64) -> Option<RangeSet> {
@@ -98,6 +102,12 @@ impl RangeSet {
     }
 }
 
+impl Debug for RangeSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "RangeSet[{}, {}]", self.from, self.to)
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 struct PartSet {
     x: RangeSet,
@@ -125,11 +135,7 @@ impl PartSet {
     }
 
     fn count_combinations(&self) -> u64 {
-        let x = self.x.to - self.x.from + 1;
-        let m = self.m.to - self.m.from + 1;
-        let a = self.a.to - self.a.from + 1;
-        let s = self.s.to - self.s.from + 1;
-        x * m * a * s
+        self.x.len() * self.m.len() * self.a.len() * self.s.len()
     }
 }
 
@@ -346,10 +352,10 @@ pub fn part2(input: &str) -> Result<u64> {
 
     let mut part_sets = vec![(
         PartSet {
-            x: RangeSet { from: 0, to: 4000 },
-            m: RangeSet { from: 0, to: 4000 },
-            a: RangeSet { from: 0, to: 4000 },
-            s: RangeSet { from: 0, to: 4000 },
+            x: RangeSet { from: 1, to: 4001 },
+            m: RangeSet { from: 1, to: 4001 },
+            a: RangeSet { from: 1, to: 4001 },
+            s: RangeSet { from: 1, to: 4001 },
         },
         "in",
     )];
@@ -357,22 +363,30 @@ pub fn part2(input: &str) -> Result<u64> {
     let mut accepted = vec![];
 
     while let Some((part_set, to_be_applied)) = part_sets.pop() {
+        dbg!(("pop", to_be_applied, &part_set));
         let results = &workflows[to_be_applied];
         for (new_part_set, result) in results {
+            dbg!(("results", &new_part_set));
             let new_part_set = part_set.intersection(new_part_set);
             if let Some(new_part_set) = new_part_set {
                 match result {
                     WorkflowResult::Accept => {
+                        dbg!(("accept", to_be_applied, &new_part_set));
                         accepted.push(new_part_set);
                     }
-                    WorkflowResult::Reject => {}
+                    WorkflowResult::Reject => {
+                        dbg!(("reject", to_be_applied, &new_part_set));
+                    }
                     WorkflowResult::Jump(name) => {
+                        dbg!(("jump", name, &new_part_set));
                         part_sets.push((new_part_set, name));
                     }
                 }
             }
         }
     }
+
+    // dbg!(&accepted);
 
     Ok(accepted.iter().map(|part| part.count_combinations()).sum())
 }
@@ -403,12 +417,35 @@ hdj{m>838:A,pv}
 {x=2461,m=1339,a=466,s=291}
 {x=2127,m=1623,a=2188,s=1013}
 "#};
-        assert_eq!(part2(input).expect("part2 should return Ok"), 19114);
+        assert_eq!(
+            part2(input).expect("part2 should return Ok"),
+            167409079868000
+        );
     }
 
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
         assert_eq!(part2(input).expect("part2 should return Ok"), 0);
+    }
+
+    #[test]
+    fn range_set_intersection_works() {
+        let a = RangeSet { from: 0, to: 10 };
+        let b = RangeSet { from: 5, to: 15 };
+        let c = RangeSet { from: 0, to: 5 };
+        let d = RangeSet { from: 10, to: 15 };
+        let e = RangeSet { from: 5, to: 10 };
+        let f = RangeSet { from: 0, to: 15 };
+        let g = RangeSet { from: 5, to: 5 };
+        let h = RangeSet { from: 15, to: 15 };
+
+        assert_eq!(a.intersection(&b), Some(RangeSet { from: 5, to: 10 }));
+        assert_eq!(a.intersection(&c), Some(RangeSet { from: 0, to: 5 }));
+        assert_eq!(a.intersection(&d), Some(RangeSet { from: 10, to: 10 }));
+        assert_eq!(a.intersection(&e), Some(RangeSet { from: 5, to: 10 }));
+        assert_eq!(a.intersection(&f), Some(RangeSet { from: 0, to: 10 }));
+        assert_eq!(a.intersection(&g), Some(RangeSet { from: 5, to: 5 }));
+        assert_eq!(a.intersection(&h), None);
     }
 }
