@@ -1,4 +1,4 @@
-use std::{fmt::Debug, fmt::Display};
+use std::{fmt::Debug, fmt::Display, ops::RangeInclusive};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RangeSet {
@@ -129,6 +129,12 @@ impl From<(u64, u64)> for RangeSet {
 impl From<RangeSet> for (u64, u64) {
     fn from(range_set: RangeSet) -> Self {
         (range_set.from, range_set.to)
+    }
+}
+
+impl From<RangeInclusive<u64>> for RangeSet {
+    fn from(range: RangeInclusive<u64>) -> Self {
+        RangeSet::new(*range.start(), *range.end())
     }
 }
 

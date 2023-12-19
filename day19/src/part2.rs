@@ -155,10 +155,10 @@ fn parse(input: &str) -> Result<HashMap<String, Workflow>> {
 fn get_set_results(workflow: &Workflow) -> Vec<(PartSet, WorkflowResult)> {
     let mut results = vec![];
     let mut current = PartSet {
-        x: RangeSet::new(0, 4000),
-        m: RangeSet::new(0, 4000),
-        a: RangeSet::new(0, 4000),
-        s: RangeSet::new(0, 4000),
+        x: (1..=4001).into(),
+        m: (1..=4001).into(),
+        a: (1..=4001).into(),
+        s: (1..=4001).into(),
     };
 
     for step in workflow {
@@ -219,10 +219,10 @@ pub fn part2(input: &str) -> Result<u64> {
 
     let mut part_sets = vec![(
         PartSet {
-            x: RangeSet::new(1, 4001),
-            m: RangeSet::new(1, 4001),
-            a: RangeSet::new(1, 4001),
-            s: RangeSet::new(1, 4001),
+            x: (1..=4001).into(),
+            m: (1..=4001).into(),
+            a: (1..=4001).into(),
+            s: (1..=4001).into(),
         },
         "in",
     )];
