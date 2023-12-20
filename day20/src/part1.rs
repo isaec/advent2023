@@ -12,7 +12,7 @@ use petgraph::{
 
 fn main() {
     let input = include_str!("../input.txt");
-    dbg!(part1(input).unwrap());
+    dbg!(part1(input));
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
@@ -148,11 +148,15 @@ fn push_broadcast<'a>(
     (low_sent, high_sent)
 }
 
-pub fn part1(input: &str) -> Result<i64> {
+pub fn part1(input: &str) -> u64 {
     let (mut graph, mut state) = parse(input);
 
-    dbg!(push_broadcast(&mut graph, &mut state));
-    todo!()
+    let (low, high) = (0..1000).fold((0, 0), |(low, high), _| {
+        let (low_sent, high_sent) = push_broadcast(&mut graph, &mut state);
+        (low + low_sent, high + high_sent)
+    });
+
+    low * high
 }
 
 #[cfg(test)]
@@ -169,7 +173,7 @@ broadcaster -> a, b, c
 %c -> inv
 &inv -> a
 "#};
-        assert_eq!(part1(input).expect("part1 should return Ok"), 32000000);
+        assert_eq!(part1(input), 32000000);
     }
 
     #[test]
@@ -181,12 +185,12 @@ broadcaster -> a
 %b -> con
 &con -> output
 "#};
-        assert_eq!(part1(input).expect("part1 should return Ok"), 11687500);
+        assert_eq!(part1(input), 11687500);
     }
 
     #[test]
     fn input() {
         let input = include_str!("../input.txt");
-        assert_eq!(part1(input).expect("part1 should return Ok"), 0);
+        assert_eq!(part1(input), 0);
     }
 }
