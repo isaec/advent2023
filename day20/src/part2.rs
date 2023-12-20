@@ -1,14 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use itertools::Itertools;
-use miette::Result;
-use miette_pretty::Pretty;
-use parse::{Grid, QuickRegex, Tile};
-use petgraph::{
-    graphmap::GraphMap,
-    visit::{IntoEdgeReferences, IntoEdges},
-    Directed,
-};
+use petgraph::{graphmap::GraphMap, visit::IntoEdgeReferences, Directed};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -85,19 +78,25 @@ fn get_ordered_edges<'a>(
 }
 
 pub fn part2(input: &str) -> u64 {
-    let (mut graph, mut state_map) = parse(input);
+    let (graph, mut state_map) = parse(input);
 
-    let mut low_sent = 0;
-    let mut high_sent = 0;
-    for _ in 0..1000 {
+    let mut presses = 0;
+    loop {
+        presses += 1;
+        dbg!(presses);
         let mut stack = VecDeque::from(vec![("broadcaster", (Pulse::Low, "anon"))]);
+        let mut rx_low_pulses = 0;
+        let mut rx_high_pulses = 0;
         while let Some((name, (pulse, origin))) = stack.pop_front() {
             // dbg!((name, pulse, origin, &stack));
-            match pulse {
-                Pulse::Low => low_sent += 1,
-                Pulse::High => high_sent += 1,
+            if name == "output" {
+                continue;
             }
-            if name == "output" || !state_map.contains_key(name) {
+            if name == "rx" {
+                match pulse {
+                    Pulse::Low => rx_low_pulses += 1,
+                    Pulse::High => rx_high_pulses += 1,
+                }
                 continue;
             }
             let module_state = state_map.get_mut(name).unwrap();
@@ -145,39 +144,18 @@ pub fn part2(input: &str) -> u64 {
                 }
             }
         }
+        if rx_low_pulses == 1 && rx_high_pulses == 0 {
+            break;
+        }
     }
 
-    low_sent * high_sent
+    presses
 }
 
 #[cfg(test)]
 mod part2_tests {
     use super::*;
     use indoc::indoc;
-
-    #[test]
-    fn example_1() {
-        let input = indoc! {r#"
-broadcaster -> a, b, c
-%a -> b
-%b -> c
-%c -> inv
-&inv -> a
-"#};
-        assert_eq!(part2(input), 32000000);
-    }
-
-    #[test]
-    fn example_2() {
-        let input = indoc! {r#"
-broadcaster -> a
-%a -> inv, con
-&inv -> b
-%b -> con
-&con -> output
-"#};
-        assert_eq!(part2(input), 11687500);
-    }
 
     #[test]
     fn input() {
