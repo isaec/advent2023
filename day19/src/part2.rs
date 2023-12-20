@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Debug};
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
+use parse::pattern_enum;
 use util::RangeSet;
 
 fn main() {
@@ -55,18 +56,20 @@ impl Part {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-enum PartCategory {
-    X,
-    M,
-    A,
-    S,
+pattern_enum! {
+    enum PartCategory {
+        X = "x",
+        M = "m",
+        A = "a",
+        S = "s",
+    }
 }
 
-#[derive(Debug, Clone)]
-enum Compare {
-    LT,
-    GT,
+pattern_enum! {
+    enum Compare {
+        LT = "<",
+        GT = ">",
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,16 +95,6 @@ enum WorkflowStep {
 
 type Workflow = Vec<WorkflowStep>;
 
-fn parse_category(input: &str) -> PartCategory {
-    match input {
-        "x" => PartCategory::X,
-        "m" => PartCategory::M,
-        "a" => PartCategory::A,
-        "s" => PartCategory::S,
-        _ => unreachable!(),
-    }
-}
-
 fn parse(input: &str) -> Result<HashMap<String, Workflow>> {
     let (workflows, _parts) = input.split_once("\n\n").pretty()?;
 
@@ -117,29 +110,16 @@ fn parse(input: &str) -> Result<HashMap<String, Workflow>> {
                     match split {
                         None => WorkflowStep::Do(parse_workflow_result(detail)),
                         Some((condition, result)) => {
-                            if condition.contains('>') {
-                                let (category, value) = condition.split_once('>').unwrap();
-                                let category = parse_category(category);
-                                let value = value.parse().unwrap();
-                                WorkflowStep::Compare(
-                                    category,
-                                    Compare::GT,
-                                    value,
-                                    parse_workflow_result(result),
-                                )
-                            } else if condition.contains('<') {
-                                let (category, value) = condition.split_once('<').unwrap();
-                                let category = parse_category(category);
-                                let value = value.parse().unwrap();
-                                WorkflowStep::Compare(
-                                    category,
-                                    Compare::LT,
-                                    value,
-                                    parse_workflow_result(result),
-                                )
-                            } else {
-                                unreachable!()
-                            }
+                            let (category, compare, value) =
+                                Compare::split_once_and_match(condition).unwrap();
+                            let category = PartCategory::try_from(category).unwrap();
+                            let value = value.parse().unwrap();
+                            WorkflowStep::Compare(
+                                category,
+                                compare,
+                                value,
+                                parse_workflow_result(result),
+                            )
                         }
                     }
                 })
