@@ -84,79 +84,70 @@ fn get_ordered_edges<'a>(
         .map(move |(_, to, _)| to)
 }
 
-fn push_broadcast<'a>(
-    graph: &'a mut GraphMap<&'a str, Priority, Directed>,
-    state_map: &mut HashMap<&'a str, Module>,
-) -> (u64, u64) {
-    let mut stack = VecDeque::from(vec![("broadcaster", (Pulse::Low, "anon"))]);
+pub fn part1(input: &str) -> u64 {
+    let (mut graph, mut state_map) = parse(input);
+
     let mut low_sent = 0;
     let mut high_sent = 0;
-    while let Some((name, (pulse, origin))) = stack.pop_front() {
-        dbg!((name, pulse, origin, &stack));
-        match pulse {
-            Pulse::Low => low_sent += 1,
-            Pulse::High => high_sent += 1,
-        }
-        if name == "output" {
-            continue;
-        }
-        let module_state = state_map.get_mut(name).unwrap();
+    for _ in 0..1000 {
+        let mut stack = VecDeque::from(vec![("broadcaster", (Pulse::Low, "anon"))]);
+        while let Some((name, (pulse, origin))) = stack.pop_front() {
+            dbg!((name, pulse, origin, &stack));
+            match pulse {
+                Pulse::Low => low_sent += 1,
+                Pulse::High => high_sent += 1,
+            }
+            if name == "output" || !state_map.contains_key(name) {
+                continue;
+            }
+            let module_state = state_map.get_mut(name).unwrap();
 
-        match module_state {
-            Module::Conjunction(None) => {
-                let mut last_received = HashMap::new();
-                for (from, _, _) in graph.edge_references().filter(|(_, to, _)| *to == name) {
-                    dbg!((&module_state, from));
-                    last_received.insert(from.to_string(), Pulse::Low);
+            match module_state {
+                Module::Conjunction(None) => {
+                    let mut last_received = HashMap::new();
+                    for (from, _, _) in graph.edge_references().filter(|(_, to, _)| *to == name) {
+                        dbg!((&module_state, from));
+                        last_received.insert(from.to_string(), Pulse::Low);
+                    }
+                    // MAYBE EVIL
+                    *module_state = Module::Conjunction(Some(last_received));
                 }
-                // MAYBE EVIL
-                *module_state = Module::Conjunction(Some(last_received));
+                _ => {}
             }
-            _ => {}
-        }
 
-        match (pulse, module_state) {
-            (_, Module::Broadcaster) => {
-                for destination in get_ordered_edges(graph, name) {
-                    stack.push_back(dbg!((destination, (pulse, name))));
+            match (pulse, module_state) {
+                (_, Module::Broadcaster) => {
+                    for destination in get_ordered_edges(&graph, name) {
+                        stack.push_back(dbg!((destination, (pulse, name))));
+                    }
                 }
-            }
-            (Pulse::High, Module::FlipFlop(_)) => {}
-            (Pulse::Low, Module::FlipFlop(state)) => {
-                let new_state = state.flip();
-                let module_state = Module::FlipFlop(new_state);
-                state_map.insert(name, module_state);
-                for destination in get_ordered_edges(graph, name) {
-                    stack.push_back(dbg!((destination, (new_state, name))));
+                (Pulse::High, Module::FlipFlop(_)) => {}
+                (Pulse::Low, Module::FlipFlop(state)) => {
+                    let new_state = state.flip();
+                    let module_state = Module::FlipFlop(new_state);
+                    state_map.insert(name, module_state);
+                    for destination in get_ordered_edges(&graph, name) {
+                        stack.push_back(dbg!((destination, (new_state, name))));
+                    }
                 }
-            }
-            (_, Module::Conjunction(state)) => {
-                let state = state.as_mut().unwrap();
-                state.insert(origin.to_string(), pulse);
-                dbg!(&state);
-                let send = if state.values().all(|v| *v == Pulse::High) {
-                    Pulse::Low
-                } else {
-                    Pulse::High
-                };
-                for destination in get_ordered_edges(graph, name) {
-                    stack.push_back(dbg!((destination, (send, name))));
+                (_, Module::Conjunction(state)) => {
+                    let state = state.as_mut().unwrap();
+                    state.insert(origin.to_string(), pulse);
+                    dbg!(&state);
+                    let send = if state.values().all(|v| *v == Pulse::High) {
+                        Pulse::Low
+                    } else {
+                        Pulse::High
+                    };
+                    for destination in get_ordered_edges(&graph, name) {
+                        stack.push_back(dbg!((destination, (send, name))));
+                    }
                 }
             }
         }
     }
-    (low_sent, high_sent)
-}
 
-pub fn part1(input: &str) -> u64 {
-    let (mut graph, mut state) = parse(input);
-
-    let (low, high) = (0..1000).fold((0, 0), |(low, high), _| {
-        let (low_sent, high_sent) = push_broadcast(&mut graph, &mut state);
-        (low + low_sent, high + high_sent)
-    });
-
-    low * high
+    low_sent * high_sent
 }
 
 #[cfg(test)]
