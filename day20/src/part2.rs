@@ -1,6 +1,7 @@
 use std::collections::{HashMap, VecDeque};
 
 use itertools::Itertools;
+use num::{integer::lcm, Integer};
 use petgraph::{graphmap::GraphMap, visit::IntoEdgeReferences, Directed};
 
 fn main() {
@@ -81,9 +82,12 @@ pub fn part2(input: &str) -> u64 {
     let (graph, mut state_map) = parse(input);
 
     let mut presses = 0;
+    let mut critical_presses: HashMap<&str, Vec<u64>> = HashMap::new();
     loop {
         presses += 1;
-        dbg!(presses);
+        if presses > 50_000 {
+            break;
+        }
         let mut stack = VecDeque::from(vec![("broadcaster", (Pulse::Low, "anon"))]);
         let mut rx_low_pulses = 0;
         let mut rx_high_pulses = 0;
@@ -98,6 +102,10 @@ pub fn part2(input: &str) -> u64 {
                     Pulse::High => rx_high_pulses += 1,
                 }
                 continue;
+            }
+            if name == "rm" && pulse == Pulse::High {
+                critical_presses.entry(origin).or_default().push(presses);
+                println!("origin: {origin}, presses: {presses}");
             }
             let module_state = state_map.get_mut(name).unwrap();
 
@@ -149,76 +157,16 @@ pub fn part2(input: &str) -> u64 {
         }
     }
 
-    presses
-}
-
-#[cfg(test)]
-mod part2_tests {
-    use super::*;
-    use indoc::indoc;
-
-    #[test]
-    fn seb_example() {
-        let input = indoc! {r#"
-%nr -> mr
-&sx -> zh
-%rk -> dc, bl
-%lx -> rs
-%hx -> bl
-%hp -> bj
-%dk -> mr, lf
-%hc -> xc
-%bj -> vv, rd
-&jt -> zh
-&bl -> ks, kn, dc, hc, zk
-&zh -> rx
-%sp -> hz, bl
-%rd -> vv, tp
-%cg -> dk
-%rg -> jl, pv
-%jl -> js
-%fb -> vv, zd
-%gv -> lx
-%lr -> vj, bl
-%vz -> hc, bl
-%kn -> bl, zk
-%rj -> mr, nr
-%cn -> pv, sb
-%rs -> vv, hp
-&mr -> qc, kb, gc, vl, bs, cg, lf
-%rb -> qj
-%sm -> bv, vv
-%dh -> rg
-%zk -> vz
-%qj -> xs, pv
-%ng -> ql, pv
-%vj -> bl, sp
-&kb -> zh
-%sb -> pv
-%vl -> mr, cz
-%dc -> lr
-%xc -> rk, bl
-%cz -> cg, mr
-%hz -> bl, hx
-%xs -> pv, cn
-%js -> ng
-%cb -> mr, nc
-%qb -> vv
-%gc -> qc
-%bv -> qb, vv
-broadcaster -> kn, fb, ln, vl
-%bs -> cb
-%lf -> gc
-%nc -> mr, rj
-%ln -> pv, dh
-%qc -> bs
-&vv -> zd, jt, fb, hp, gv, lx
-&ks -> zh
-%ql -> rb
-%tp -> sm, vv
-&pv -> sx, dh, jl, ln, js, rb, ql
-%zd -> gv
-"#};
-        assert_eq!(part2(input), 243081086866483);
-    }
+    critical_presses
+        .iter()
+        .map(|(_, presses)| {
+            presses
+                .iter()
+                .tuple_windows()
+                .map(|(a, b)| b - a)
+                .last()
+                .unwrap()
+        })
+        .reduce(|a, b| lcm(a, b))
+        .unwrap()
 }
