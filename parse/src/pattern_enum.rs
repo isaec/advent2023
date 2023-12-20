@@ -33,13 +33,25 @@ macro_rules! pattern_enum {
             )*
         }
 
-        impl From<&str> for $name {
-            fn from(input: &str) -> Self {
+        impl TryFrom<&str> for $name {
+            type Error = miette::Report;
+
+            fn try_from(input: &str) -> std::result::Result<Self, Self::Error> {
                 match input {
                     $(
-                        $pattern => $name::$variant,
+                        $pattern => Ok($name::$variant),
                     )*
-                    _ => panic!("None of [{patterns}] match '{input}'", patterns = stringify!($($pattern),*))
+                    _ => Err(miette::Report::msg(format!("None of [{patterns}] match '{input}'", patterns = stringify!($($pattern),*))))
+                }
+            }
+        }
+
+        impl Into<&'static str> for $name {
+            fn into(self) -> &'static str {
+                match self {
+                    $(
+                        $name::$variant => $pattern,
+                    )*
                 }
             }
         }
@@ -73,13 +85,22 @@ macro_rules! pattern_enum {
         }
 
         impl $name {
+            const PATTERNS: &[($name, &'static str)] = &[$(($name::$variant, $pattern)),*];
+
+            fn get_first_matching_pattern(input: &str) -> Option<($name, &'static str)> {
+                Self::PATTERNS.iter()
+                    .filter_map(|(variant, pattern)|
+                        input
+                        .find(pattern)
+                        .map(|i| (i, variant, pattern))
+                    )
+                    .min_by_key(|(i, _, _)| *i)
+                    .map(|(_, variant, pattern)| (*variant, *pattern))
+            }
+
             pub fn split_once_and_match<'a>(input: &'a str) -> Option<(&'a str, Self, &'a str)> {
-                $(
-                    if let Some((prefix, suffix)) = input.split_once($pattern) {
-                        return Some((prefix, $name::$variant, suffix));
-                    }
-                )*
-                None
+                let pattern = Self::get_first_matching_pattern(input)?;
+                input.split_once(pattern.1).map(|(prefix, suffix)| (prefix, pattern.0, suffix))
             }
 
             paste::paste! {
@@ -94,6 +115,15 @@ macro_rules! pattern_enum {
                     result.push([< $name Split >]::Str(input));
                     result
                 }
+
+                pub fn split_match_trim_iter<'a>(input: &'a str) -> impl Iterator<Item = [< $name Split >]<'a>> {
+                    Self::split_match(input)
+                        .into_iter()
+                        .map(|split| match split {
+                            [< $name Split >]::Str(s) => [< $name Split >]::Str(s.trim()),
+                            [< $name Split >]::Pat(p) => [< $name Split >]::Pat(p),
+                        })
+                }
             }
         }
     };
@@ -101,6 +131,8 @@ macro_rules! pattern_enum {
 
 #[cfg(test)]
 mod tests {
+    use itertools::Itertools;
+
     use super::*;
 
     pattern_enum! {
@@ -126,12 +158,21 @@ mod tests {
     }
 
     #[test]
-    fn from() {
-        assert_eq!(Comparator::LT, Comparator::from("<"));
-        assert_eq!(Comparator::GT, Comparator::from(">"));
-        assert_eq!(Comparator::EQ, Comparator::from("="));
-        assert_eq!(Comparator::LTE, Comparator::from("<="));
-        assert_eq!(Comparator::GTE, Comparator::from(">="));
+    fn try_from() {
+        assert_eq!(Comparator::LT, Comparator::try_from("<").unwrap());
+        assert_eq!(Comparator::GT, Comparator::try_from(">").unwrap());
+        assert_eq!(Comparator::EQ, Comparator::try_from("=").unwrap());
+        assert_eq!(Comparator::LTE, Comparator::try_from("<=").unwrap());
+        assert_eq!(Comparator::GTE, Comparator::try_from(">=").unwrap());
+    }
+
+    #[test]
+    fn into() {
+        let lt: &str = Comparator::LT.into();
+        assert_eq!(lt, "<");
+
+        let gt: &str = Comparator::GT.into();
+        assert_eq!(gt, ">");
     }
 
     #[test]
@@ -180,26 +221,49 @@ mod tests {
         );
     }
 
-    // #[test]
-    // fn split_match() {
-    //     assert_eq!(
-    //         Comparator::split_match("x <= 5"),
-    //         vec![
-    //             ComparatorSplit::Str("x "),
-    //             ComparatorSplit::Pat(Comparator::LTE),
-    //             ComparatorSplit::Str(" 5"),
-    //         ]
-    //     );
+    #[test]
+    fn split_match() {
+        assert_eq!(
+            Comparator::split_match("x <= 5"),
+            vec![
+                ComparatorSplit::Str("x "),
+                ComparatorSplit::Pat(Comparator::LTE),
+                ComparatorSplit::Str(" 5"),
+            ]
+        );
 
-    //     assert_eq!(
-    //         Ops::split_match("x = true != false"),
-    //         vec![
-    //             OpsSplit::Str("x "),
-    //             OpsSplit::Pat(Ops::ASSIGN),
-    //             OpsSplit::Str(" true "),
-    //             OpsSplit::Pat(Ops::NEQ),
-    //             OpsSplit::Str(" false"),
-    //         ]
-    //     );
-    // }
+        assert_eq!(
+            Ops::split_match("x = true != false"),
+            vec![
+                OpsSplit::Str("x "),
+                OpsSplit::Pat(Ops::ASSIGN),
+                OpsSplit::Str(" true "),
+                OpsSplit::Pat(Ops::NEQ),
+                OpsSplit::Str(" false"),
+            ]
+        );
+    }
+
+    #[test]
+    fn split_match_trim_iter() {
+        assert_eq!(
+            Comparator::split_match_trim_iter("x <= 5").collect_tuple(),
+            Some((
+                ComparatorSplit::Str("x"),
+                ComparatorSplit::Pat(Comparator::LTE),
+                ComparatorSplit::Str("5"),
+            ))
+        );
+
+        assert_eq!(
+            Ops::split_match_trim_iter("x = true != false").collect_tuple(),
+            Some((
+                OpsSplit::Str("x"),
+                OpsSplit::Pat(Ops::ASSIGN),
+                OpsSplit::Str("true"),
+                OpsSplit::Pat(Ops::NEQ),
+                OpsSplit::Str("false"),
+            ))
+        );
+    }
 }
