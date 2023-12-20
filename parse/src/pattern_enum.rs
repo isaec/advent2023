@@ -110,7 +110,9 @@ macro_rules! pattern_enum {
                     let mut result = Vec::new();
                     let mut input = input;
                     while let Some((prefix, variant, suffix)) = Self::split_once_and_match(input) {
-                        result.push([< $name Split >]::Str(prefix));
+                        if !prefix.is_empty() {
+                            result.push([< $name Split >]::Str(prefix));
+                        }
                         result.push([< $name Split >]::Pat(variant));
                         input = suffix;
                     }
@@ -250,6 +252,11 @@ mod tests {
         assert_eq!(
             Ops::split_match("x ="),
             vec![OpsSplit::Str("x "), OpsSplit::Pat(Ops::ASSIGN)]
+        );
+
+        assert_eq!(
+            Ops::split_match("= x"),
+            vec![OpsSplit::Pat(Ops::ASSIGN), OpsSplit::Str(" x")]
         );
     }
 
