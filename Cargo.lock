@@ -141,6 +141,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "const-str"
+version = "0.5.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aca749d3d3f5b87a0d6100509879f9cf486ab510803a4a4e1001da1ff61c2bd6"
+
+[[package]]
 name = "counter"
 version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -939,12 +945,14 @@ checksum = "c1b04fb49957986fdce4d6ee7a65027d55d4b6d2265e5848bbb507b58ccfdb6f"
 name = "parse"
 version = "0.1.0"
 dependencies = [
+ "const-str",
  "elsa",
  "fancy-regex",
  "indoc",
  "itertools 0.12.0",
  "miette",
  "miette_pretty",
+ "paste",
  "petgraph",
  "proptest",
  "replace_with",

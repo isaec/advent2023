@@ -15,6 +15,8 @@ elsa.workspace = true
 itertools.workspace = true
 thiserror = "1.0.50"
 replace_with = "0.1.7"
+const-str = "0.5.6"
+paste = "1.0.14"
 
 [dev-dependencies]
 proptest = "1.4.0"
