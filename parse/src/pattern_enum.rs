@@ -89,7 +89,7 @@ macro_rules! pattern_enum {
         impl $name {
             const PATTERNS: &[($name, &'static str)] = &[$(($name::$variant, $pattern)),*];
 
-            fn get_first_matching_pattern(input: &str) -> Option<($name, &'static str)> {
+            fn get_first_matching_pattern(input: &str) -> Option<(usize, $name, &'static str)> {
                 Self::PATTERNS.iter()
                     .filter_map(|(variant, pattern)|
                         input
@@ -97,12 +97,12 @@ macro_rules! pattern_enum {
                         .map(|i| (i, variant, pattern))
                     )
                     .min_by_key(|(i, _, _)| *i)
-                    .map(|(_, variant, pattern)| (*variant, *pattern))
+                    .map(|(i, variant, pattern)| (i, *variant, *pattern))
             }
 
             pub fn split_once_and_match<'a>(input: &'a str) -> Option<(&'a str, Self, &'a str)> {
-                let pattern = Self::get_first_matching_pattern(input)?;
-                input.split_once(pattern.1).map(|(prefix, suffix)| (prefix, pattern.0, suffix))
+                let (i, variant, pattern) = Self::get_first_matching_pattern(input)?;
+                Some((&input[..i], variant, &input[i + pattern.len()..],))
             }
 
             $crate::macro_paste::paste! {
@@ -114,7 +114,9 @@ macro_rules! pattern_enum {
                         result.push([< $name Split >]::Pat(variant));
                         input = suffix;
                     }
-                    result.push([< $name Split >]::Str(input));
+                    if !input.is_empty() {
+                        result.push([< $name Split >]::Str(input));
+                    }
                     result
                 }
 
@@ -243,6 +245,11 @@ mod tests {
                 OpsSplit::Pat(Ops::NEQ),
                 OpsSplit::Str(" false"),
             ]
+        );
+
+        assert_eq!(
+            Ops::split_match("x ="),
+            vec![OpsSplit::Str("x "), OpsSplit::Pat(Ops::ASSIGN)]
         );
     }
 
