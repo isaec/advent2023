@@ -18,7 +18,9 @@ macro_rules! pattern_enum {
                 i += 1;
                 let mut j = i + 1;
                 while j < patterns.len() {
-                    assert!(!$crate::macro_const_str::starts_with!(patterns[j], patterns[i]), "patterns must be decreasingly specific");
+                    if $crate::macro_const_str::starts_with!(patterns[j], patterns[i]) {
+                        panic!("Patterns must be decreasingly specific");
+                    }
                     j += 1;
                 }
             }
