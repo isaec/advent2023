@@ -18,7 +18,7 @@ macro_rules! pattern_enum {
                 i += 1;
                 let mut j = i + 1;
                 while j < patterns.len() {
-                    assert!(!const_str::starts_with!(patterns[j], patterns[i]), "patterns must be decreasingly specific");
+                    assert!(!$crate::macro_const_str::starts_with!(patterns[j], patterns[i]), "patterns must be decreasingly specific");
                     j += 1;
                 }
             }
@@ -76,7 +76,7 @@ macro_rules! pattern_enum {
             }
         }
 
-        paste::paste! {
+        $crate::macro_paste::paste! {
             #[derive(std::fmt::Debug, PartialEq, Eq, Hash, Clone, Copy)]
             enum [< $name Split >]<'a> {
                 Pat($name),
@@ -103,7 +103,7 @@ macro_rules! pattern_enum {
                 input.split_once(pattern.1).map(|(prefix, suffix)| (prefix, pattern.0, suffix))
             }
 
-            paste::paste! {
+            $crate::macro_paste::paste! {
                 pub fn split_match<'a>(input: &'a str) -> Vec<[< $name Split >]<'a>> {
                     let mut result = Vec::new();
                     let mut input = input;
