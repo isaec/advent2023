@@ -1372,6 +1372,7 @@ dependencies = [
  "itertools 0.12.0",
  "miette",
  "miette_pretty",
+ "num",
  "parse",
  "petgraph",
  "rayon",

@@ -19,6 +19,7 @@ util.workspace = true
 counter.workspace = true
 geo.workspace = true
 elsa.workspace = true
+num.workspace = true
 
 [[bin]]
 name = "part1"
