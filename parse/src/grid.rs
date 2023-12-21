@@ -450,7 +450,7 @@ impl<T> Grid<T> {
         use std::fs::File;
         use std::io::Write;
 
-        let path = format!("{}.txt", name);
+        let path = format!("{}.dbg.txt", name);
 
         let mut file = File::create(path).pretty_msg("creating file")?;
         writeln!(file, "{:?}", self).pretty_msg("writing debug output")?;

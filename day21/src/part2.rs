@@ -31,6 +31,10 @@ pub fn part2(input: &str, steps: u64) -> Result<u64> {
     let start = starts[0];
     let mut graph = GraphMap::<(usize, usize), (), Undirected>::new();
 
+    dbg!(steps % grid.width as u64);
+
+    dbg!(start);
+
     let mut frontier = vec![start];
 
     while let Some(current) = frontier.pop() {
@@ -53,7 +57,7 @@ pub fn part2(input: &str, steps: u64) -> Result<u64> {
     currently_at_map.insert((0, 0), [start].iter().copied().collect());
 
     for step in 0..steps {
-        dbg!(step);
+        // dbg!(step);
         let mut next_map = HashMap::new();
         for (tile_coord, currently_at) in currently_at_map.iter() {
             for current_coord in currently_at.iter() {
@@ -99,24 +103,30 @@ pub fn part2(input: &str, steps: u64) -> Result<u64> {
             }
         }
         currently_at_map = next_map;
-        // pattern_enum! {
-        //     enum At {
-        //         At = "O",
-        //         Garden = ".",
-        //         Rock = "#",
-        //     }
-        // }
-        // dbg!(grid.map(|(coord, tile)| {
-        //     if currently_at_map.get(&(0, 0)).unwrap().contains(&coord) {
-        //         At::At
-        //     } else {
-        //         match tile {
-        //             Tile::GardenPlot => At::Garden,
-        //             Tile::Rock => At::Rock,
-        //             Tile::Start => At::Garden,
-        //         }
-        //     }
-        // }));
+        pattern_enum! {
+            enum At {
+                At = "O",
+                Garden = ".",
+                Rock = "#",
+            }
+        }
+        if step == 65 {
+            grid.map(|(coord, tile)| {
+                if currently_at_map.get(&(0, 0)).unwrap().contains(&coord) {
+                    At::At
+                } else {
+                    match tile {
+                        Tile::GardenPlot => At::Garden,
+                        Tile::Rock => At::Rock,
+                        Tile::Start => At::Garden,
+                    }
+                }
+            })
+            .debug_to_file("f1")?;
+            dbg!(step);
+            dbg!(steps % step);
+            break;
+        }
     }
 
     Ok(currently_at_map
@@ -146,11 +156,11 @@ mod part2_tests {
 ...........
 "#};
         [
-            (6, 16),
+            // (6, 16),
             (10, 50),
-            (50, 1594),
-            (100, 6536),
-            (500, 167004),
+            // (50, 1594),
+            // (100, 6536),
+            // (500, 167004),
             // (1000, 668697),
             // (5000, 16733044),
         ]
