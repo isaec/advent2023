@@ -221,6 +221,8 @@ impl<T> Grid<T> {
     }
 
     pub fn get_neighbors(&self, x: usize, y: usize) -> Result<Neighbors> {
+        self.validate(x, y)?;
+
         macro_rules! cond_tuple {
             ($cond:expr => ($x:expr, $y:expr)) => {
                 if $cond {
@@ -230,8 +232,6 @@ impl<T> Grid<T> {
                 }
             };
         }
-
-        self.validate(x, y)?;
 
         Ok(Neighbors {
             up: cond_tuple! {y > 0 => (x, y - 1)},
@@ -243,6 +243,25 @@ impl<T> Grid<T> {
             up_right: cond_tuple! {y > 0 && x < self.width - 1 => (x + 1, y - 1)},
             down_left: cond_tuple! {y < self.height - 1 && x > 0 => (x - 1, y + 1)},
             down_right: cond_tuple! {y < self.height - 1 && x < self.width - 1 => (x + 1, y + 1)},
+        })
+    }
+
+    pub fn get_neighbors_wrapping(&self, x: usize, y: usize) -> Result<Neighbors> {
+        self.validate(x, y)?;
+
+        Ok(Neighbors {
+            up: Some((x, (y + self.height - 1) % self.height)),
+            down: Some((x, (y + 1) % self.height)),
+            left: Some(((x + self.width - 1) % self.width, y)),
+            right: Some(((x + 1) % self.width, y)),
+
+            up_left: Some((
+                (x + self.width - 1) % self.width,
+                (y + self.height - 1) % self.height,
+            )),
+            up_right: Some(((x + 1) % self.width, (y + self.height - 1) % self.height)),
+            down_left: Some(((x + self.width - 1) % self.width, (y + 1) % self.height)),
+            down_right: Some(((x + 1) % self.width, (y + 1) % self.height)),
         })
     }
 
@@ -734,6 +753,64 @@ mod tests {
         let neighbors = grid.get_neighbors(0, 0).unwrap();
         let iter = neighbors.iter(&Relationship::Adjacent);
         assert_eq!(iter.collect::<Vec<_>>(), vec![(0, 1), (1, 0), (1, 1)]);
+    }
+
+    #[test]
+    fn neighbors_wrapping_iter() {
+        let input = indoc! {r#"
+            #####
+            #...#
+            #...#
+            #####
+        "#};
+
+        let grid = parse_grid(input, |c| c).unwrap();
+
+        let neighbors = grid.get_neighbors_wrapping(0, 0).unwrap();
+        let iter = neighbors.iter(&Relationship::Orthogonal);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![(0, 3), (0, 1), (4, 0), (1, 0)]
+        );
+
+        let neighbors = grid.get_neighbors_wrapping(0, 0).unwrap();
+        let iter = neighbors.iter(&Relationship::Diagonal);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![(4, 3), (1, 3), (4, 1), (1, 1)]
+        );
+
+        let neighbors = grid.get_neighbors_wrapping(0, 0).unwrap();
+        let iter = neighbors.iter(&Relationship::Adjacent);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![
+                (0, 3),
+                (0, 1),
+                (4, 0),
+                (1, 0),
+                (4, 3),
+                (1, 3),
+                (4, 1),
+                (1, 1)
+            ]
+        );
+
+        let neighbors = grid.get_neighbors_wrapping(4, 3).unwrap();
+        let iter = neighbors.iter(&Relationship::Adjacent);
+        assert_eq!(
+            iter.collect::<Vec<_>>(),
+            vec![
+                (4, 2),
+                (4, 0),
+                (3, 3),
+                (0, 3),
+                (3, 2),
+                (0, 2),
+                (3, 0),
+                (0, 0)
+            ]
+        );
     }
 
     #[test]
