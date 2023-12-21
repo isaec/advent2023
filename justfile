@@ -4,6 +4,12 @@ testwatch PKG BIN='part1 part2' ON='example':
 test PKG BIN='part1 part2' ON='example':
   cargo test {{ON}} --package {{PKG}} --bin {{BIN}}
 
+testwatch_release PKG BIN='part1 part2' ON='example':
+  cargo watch -x 'test --release {{ON}} --package {{PKG}} --bin {{BIN}}'
+
+test_release PKG BIN='part1 part2' ON='example':
+  cargo test --release {{ON}} --package {{PKG}} --bin {{BIN}}
+
 run PKG BIN:
   cargo run --package {{PKG}} --bin {{BIN}}
 
