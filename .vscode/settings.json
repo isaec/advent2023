@@ -19,6 +19,7 @@
     "raycast",
     "seqs",
     "testwatch",
-    "thiserror"
+    "thiserror",
+    "vals"
   ]
 }
