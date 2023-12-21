@@ -10,6 +10,9 @@ testwatch_release PKG BIN='part1 part2' ON='example':
 test_release PKG BIN='part1 part2' ON='example':
   cargo test --release {{ON}} --package {{PKG}} --bin {{BIN}}
 
+test_release_nocapture PKG BIN='part1 part2' ON='example':
+  cargo test --release {{ON}} --package {{PKG}} --bin {{BIN}} -- --nocapture
+
 run PKG BIN:
   cargo run --package {{PKG}} --bin {{BIN}}
 

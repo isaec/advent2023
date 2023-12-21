@@ -1,9 +1,9 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
-use parse::{Grid, Tile};
+use parse::{pattern_enum, Grid, Tile};
 use petgraph::{graphmap::GraphMap, Undirected};
 
 fn main() {
@@ -49,52 +49,80 @@ pub fn part2(input: &str, steps: u64) -> Result<u64> {
         }
     }
 
-    let mut currently_at = HashSet::with_capacity(1_000);
-    currently_at.insert((start, (0, 0)));
+    let mut currently_at_map: HashMap<(isize, isize), HashSet<(usize, usize)>> = HashMap::new();
+    currently_at_map.insert((0, 0), [start].iter().copied().collect());
 
     for step in 0..steps {
         dbg!(step);
-        let mut next = HashSet::with_capacity(currently_at.len());
-        for (current_coord, tile_coord) in currently_at.iter() {
-            let neighbors = grid
-                .get_neighbors_wrapping(current_coord.0, current_coord.1)
-                .unwrap();
-            for neighbor in neighbors.iter(&parse::Relationship::Orthogonal) {
-                let tile = *grid.get(neighbor.0, neighbor.1)?;
+        let mut next_map = HashMap::new();
+        for (tile_coord, currently_at) in currently_at_map.iter() {
+            for current_coord in currently_at.iter() {
+                let neighbors = grid
+                    .get_neighbors_wrapping(current_coord.0, current_coord.1)
+                    .unwrap();
+                for neighbor in neighbors.iter(&parse::Relationship::Orthogonal) {
+                    let tile = *grid.get(neighbor.0, neighbor.1)?;
 
-                if tile == Tile::Rock {
-                    continue;
-                }
-
-                let mut next_tile_coord = *tile_coord;
-
-                if (neighbor.0 as isize - current_coord.0 as isize).abs() > 1 {
-                    if neighbor.0 == 0 {
-                        next_tile_coord.0 -= 1;
-                    } else if neighbor.0 == grid.width - 1 {
-                        next_tile_coord.0 += 1;
+                    if tile == Tile::Rock {
+                        continue;
                     }
-                }
 
-                if (neighbor.1 as isize - current_coord.1 as isize).abs() > 1 {
-                    if neighbor.1 == 0 {
-                        next_tile_coord.1 -= 1;
-                    } else if neighbor.1 == grid.height - 1 {
-                        next_tile_coord.1 += 1;
+                    let mut next_tile_coord = *tile_coord;
+
+                    if (neighbor.0 as isize - current_coord.0 as isize).abs() > 1 {
+                        if neighbor.0 == 0 {
+                            next_tile_coord.0 -= 1;
+                        } else if neighbor.0 == grid.width - 1 {
+                            next_tile_coord.0 += 1;
+                        }
                     }
-                }
 
-                let pair = (neighbor, next_tile_coord);
+                    if (neighbor.1 as isize - current_coord.1 as isize).abs() > 1 {
+                        if neighbor.1 == 0 {
+                            next_tile_coord.1 -= 1;
+                        } else if neighbor.1 == grid.height - 1 {
+                            next_tile_coord.1 += 1;
+                        }
+                    }
 
-                if !next.contains(&pair) {
-                    next.insert(pair);
+                    // let pair = (neighbor, next_tile_coord);
+
+                    // if !next.contains(&pair) {
+                    //     next.insert(pair);
+                    // }
+
+                    next_map
+                        .entry(next_tile_coord)
+                        .or_insert_with(|| HashSet::new())
+                        .insert(neighbor);
                 }
             }
         }
-        currently_at = next;
+        currently_at_map = next_map;
+        // pattern_enum! {
+        //     enum At {
+        //         At = "O",
+        //         Garden = ".",
+        //         Rock = "#",
+        //     }
+        // }
+        // dbg!(grid.map(|(coord, tile)| {
+        //     if currently_at_map.get(&(0, 0)).unwrap().contains(&coord) {
+        //         At::At
+        //     } else {
+        //         match tile {
+        //             Tile::GardenPlot => At::Garden,
+        //             Tile::Rock => At::Rock,
+        //             Tile::Start => At::Garden,
+        //         }
+        //     }
+        // }));
     }
 
-    Ok(currently_at.len() as u64)
+    Ok(currently_at_map
+        .iter()
+        .map(|(_, currently_at)| currently_at.len())
+        .sum::<usize>() as u64)
 }
 
 #[cfg(test)]
