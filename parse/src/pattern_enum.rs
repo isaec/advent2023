@@ -2,7 +2,6 @@
 macro_rules! pattern_enum {
     (
         $(#[$outer:meta])*
-        $visibility:vis
         enum $name:ident {
             $(
                 $(#[$inner:meta])*
@@ -28,7 +27,7 @@ macro_rules! pattern_enum {
 
         $(#[$outer])*
         #[derive(PartialEq, Eq, Hash, Clone, Copy)]
-        $visibility enum $name {
+        enum $name {
             $(
                 $(#[$inner])*
                 $variant,
