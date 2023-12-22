@@ -178,9 +178,14 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
 }
 
 fn fall_all(grid: &mut HashMap<Pos, Option<usize>>) {
-    let mut ids = grid.iter().filter_map(|(_, &i)| i).collect_vec();
-    ids.sort_unstable();
-    ids.dedup();
+    let ids = grid
+        .iter()
+        .filter_map(|(pos, &i)| match i {
+            Some(i) => Some((*pos, i)),
+            None => None,
+        })
+        .sorted_unstable_by_key(|(pos, _)| pos.2);
+    let ids = ids.map(|(_, i)| i).dedup();
     for id in ids {
         // dbg!(id);
         fall(grid, id);
