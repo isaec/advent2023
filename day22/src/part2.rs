@@ -113,16 +113,16 @@ fn parse(input: &str) -> Result<Vec<(usize, Pos, Pos)>> {
         .collect()
 }
 
-fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) -> bool {
+fn fall(grid: &mut HashMap<Pos, usize>, ident: usize) -> bool {
     let initial_pos = grid
         .iter()
-        .filter(|(_, &i)| i == Some(ident))
+        .filter(|(_, &i)| i == ident)
         .map(|(&pos, _)| pos)
         .collect_vec();
     let mut pos = initial_pos.clone();
 
     for p in pos.iter_mut() {
-        grid.insert(*p, None);
+        grid.remove(p);
     }
 
     let is_vert = pos
@@ -136,46 +136,36 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) -> bool {
     if is_vert {
         let mut min = *pos.iter().min_by_key(|p| p.2).unwrap();
         // dbg!(min);
-        while grid
-            .get(&(min + Pos(0, 0, -1)))
-            .is_some_and(|&i| i.is_none())
-        {
+        while min.2 > 1 && grid.get(&(min + Pos(0, 0, -1))).is_none() {
             for p in pos.iter_mut() {
                 *p = *p + Pos(0, 0, -1);
             }
             min = min + Pos(0, 0, -1);
         }
     } else {
-        while pos.iter().all(|p| {
-            grid.get(&(*p + Pos(0, 0, -1)))
-                .is_some_and(|&i| i.is_none())
-        }) {
+        while pos[0].2 > 1
+            && pos
+                .iter()
+                .all(|p| grid.get(&(*p + Pos(0, 0, -1))).is_none())
+        {
             for p in pos.iter_mut() {
                 *p = *p + Pos(0, 0, -1);
             }
         }
-        // dbg!(&pos);
     }
 
     for p in pos.iter() {
-        grid.insert(*p, Some(ident));
+        grid.insert(*p, ident);
     }
 
     initial_pos != pos
 }
 
-fn fall_all(grid: &mut HashMap<Pos, Option<usize>>) -> u64 {
-    let ids = grid
-        .iter()
-        .filter_map(|(pos, &i)| match i {
-            Some(i) => Some((*pos, i)),
-            None => None,
-        })
-        .sorted_unstable_by_key(|(pos, _)| pos.2);
-    let ids = ids.map(|(_, i)| i).dedup();
-    ids.map(|i| fall(grid, i))
-        .map(|b| if b { 1 } else { 0 })
-        .sum()
+fn fall_all<'a>(
+    grid: &mut HashMap<Pos, usize>,
+    lowest_first_ids: impl Iterator<Item = &'a usize>,
+) -> u64 {
+    lowest_first_ids.map(|i| fall(grid, *i) as u64).sum()
 }
 
 pub fn part2(input: &str) -> Result<u64> {
@@ -185,22 +175,30 @@ pub fn part2(input: &str) -> Result<u64> {
     let max_x = bricks.iter().map(|(_, start, _)| start.0).max().unwrap();
     let max_y = bricks.iter().map(|(_, _, start)| start.1).max().unwrap();
     let max_z = bricks.iter().map(|(_, _, start)| start.2).max().unwrap();
-    for x in 0..=max_x {
-        for y in 0..=max_y {
-            for z in 1..=max_z {
-                grid.insert(Pos(x, y, z), None);
-            }
-        }
-    }
+    // for x in 0..=max_x {
+    //     for y in 0..=max_y {
+    //         for z in 1..=max_z {
+    //             grid.insert(Pos(x, y, z), None);
+    //         }
+    //     }
+    // }
     dbg!(max_x, max_y, max_z);
 
     for (i, start, end) in &bricks {
         for pos in start.iter_to(*end) {
-            grid.insert(pos, Some(*i));
+            grid.insert(pos, *i);
         }
     }
 
-    fall_all(&mut grid);
+    let lowest_first_ids = grid
+        .iter()
+        .sorted_unstable_by_key(|(pos, _)| pos.2)
+        .map(|(_, i)| i)
+        .dedup()
+        .copied()
+        .collect_vec();
+
+    fall_all(&mut grid, lowest_first_ids.iter());
 
     // figure out how many bricks can be removed without fall_all changing the grid
     Ok(bricks
@@ -209,9 +207,13 @@ pub fn part2(input: &str) -> Result<u64> {
         .map(|i| {
             let mut grid_copy: HashMap<Pos, _> = grid
                 .iter()
-                .map(|(&p, &oi)| if oi == Some(i) { (p, None) } else { (p, oi) })
+                .filter(|(_, &i2)| i != i2)
+                .map(|(&k, &v)| (k, v))
                 .collect();
-            fall_all(&mut grid_copy)
+            fall_all(
+                &mut grid_copy,
+                lowest_first_ids.iter().filter(|&&i2| i2 != i),
+            )
         })
         .sum())
 }
