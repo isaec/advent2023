@@ -1,6 +1,5 @@
 use std::{cell::RefCell, collections::HashMap, error::Error, rc::Rc};
 
-use elsa::FrozenMap;
 use fancy_regex::Regex;
 use miette::Result;
 use miette_pretty::Pretty;

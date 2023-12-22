@@ -1,13 +1,10 @@
-use core::panic;
-use std::{
-    collections::{HashMap, VecDeque},
-    fmt::Formatter,
-};
+use std::{collections::HashMap, fmt::Formatter};
 
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
-use parse::{Grid, QuickRegex, Tile};
+use parse::QuickRegex;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -45,6 +42,9 @@ impl Pos {
     fn iter_to(self, end: Self) -> Box<dyn Iterator<Item = Self>> {
         let Self(x1, y1, z1) = self;
         let Self(x2, y2, z2) = end;
+        if self == end {
+            return Box::new(std::iter::once(self));
+        }
         assert!(
             [x1 == x2, y1 == y2, z1 == z2]
                 .into_iter()
@@ -146,11 +146,11 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
         .tuple_windows()
         .all(|(a, b)| a.0 == b.0 && a.1 == b.1);
 
-    dbg!(is_vert, pos.len());
+    // dbg!(is_vert, pos.len());
 
     if is_vert {
         let mut min = *pos.iter().min_by_key(|p| p.2).unwrap();
-        dbg!(min);
+        // dbg!(min);
         while grid
             .get(&(min + Pos(0, 0, -1)))
             .is_some_and(|&i| i.is_none())
@@ -169,7 +169,7 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
                 *p = *p + Pos(0, 0, -1);
             }
         }
-        dbg!(&pos);
+        // dbg!(&pos);
     }
 
     for p in pos.iter() {
@@ -182,7 +182,7 @@ fn fall_all(grid: &mut HashMap<Pos, Option<usize>>) {
     ids.sort_unstable();
     ids.dedup();
     for id in ids {
-        dbg!(id);
+        // dbg!(id);
         fall(grid, id);
     }
 }
@@ -203,15 +203,32 @@ pub fn part1(input: &str) -> Result<i64> {
     }
     dbg!(max_x, max_y, max_z);
 
-    for (i, start, end) in bricks {
-        for pos in start.iter_to(end) {
-            grid.insert(pos, Some(i));
+    for (i, start, end) in &bricks {
+        for pos in start.iter_to(*end) {
+            grid.insert(pos, Some(*i));
         }
     }
 
     fall_all(&mut grid);
 
-    Ok(0)
+    // figure out how many bricks can be removed without fall_all changing the grid
+    Ok(bricks
+        .par_iter()
+        .map(|(i, _, _)| *i)
+        .map(|i| {
+            let grid_copy_a: HashMap<Pos, _> = grid
+                .iter()
+                .map(|(&p, &oi)| if oi == Some(i) { (p, None) } else { (p, oi) })
+                .collect();
+            let mut grid_copy_b = grid_copy_a.clone();
+            fall_all(&mut grid_copy_b);
+            if grid_copy_a == grid_copy_b {
+                1
+            } else {
+                0
+            }
+        })
+        .sum())
 }
 
 #[cfg(test)]
