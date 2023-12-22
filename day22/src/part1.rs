@@ -1,5 +1,8 @@
 use core::panic;
-use std::collections::{HashMap, VecDeque};
+use std::{
+    collections::{HashMap, VecDeque},
+    fmt::Formatter,
+};
 
 use itertools::Itertools;
 use miette::Result;
@@ -11,8 +14,15 @@ fn main() {
     dbg!(part1(input).unwrap());
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 struct Pos(i64, i64, i64);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Axis {
+    X,
+    Y,
+    Z,
+}
 
 impl Pos {
     fn new(iter: impl Iterator<Item = i64>) -> Result<Self> {
@@ -22,6 +32,14 @@ impl Pos {
 
     fn from_str(s: &str) -> Result<Self> {
         Self::new(s.get_digits()?.into_iter())
+    }
+
+    fn get(&self, axis: Axis) -> i64 {
+        match axis {
+            Axis::X => self.0,
+            Axis::Y => self.1,
+            Axis::Z => self.2,
+        }
     }
 
     fn iter_to(self, end: Self) -> Box<dyn Iterator<Item = Self>> {
@@ -74,6 +92,12 @@ impl Pos {
     }
 }
 
+impl std::fmt::Debug for Pos {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Pos({}, {}, {})", self.0, self.1, self.2)
+    }
+}
+
 macro_rules! impl_op {
     ($trait:ident, $fn:ident, $op:tt) => {
         impl std::ops::$trait for Pos {
@@ -105,12 +129,86 @@ fn parse(input: &str) -> Result<Vec<(usize, Pos, Pos)>> {
         .collect()
 }
 
+fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
+    let mut pos = grid
+        .iter()
+        .filter(|(_, &i)| i == Some(ident))
+        .map(|(&pos, _)| pos)
+        .collect_vec();
+
+    for p in pos.iter_mut() {
+        grid.remove(p);
+    }
+
+    let is_vert = pos
+        .iter()
+        .take(2)
+        .tuple_windows()
+        .all(|(a, b)| a.0 == b.0 && a.1 == b.1);
+
+    dbg!(is_vert, pos.len());
+
+    if is_vert {
+        let min = *pos.iter().min_by_key(|p| p.2).unwrap();
+        while grid
+            .get(&(min + Pos(0, 0, -1)))
+            .is_some_and(|&i| i.is_none())
+        {
+            for p in pos.iter_mut() {
+                *p = *p + Pos(0, 0, -1);
+            }
+        }
+    } else {
+        while pos.iter().all(|p| {
+            grid.get(&(*p + Pos(0, 0, -1)))
+                .is_some_and(|&i| i.is_none())
+        }) {
+            for p in pos.iter_mut() {
+                *p = *p + Pos(0, 0, -1);
+            }
+        }
+        dbg!(&pos);
+    }
+
+    for p in pos.iter() {
+        grid.insert(*p, Some(ident));
+    }
+}
+
+fn fall_all(grid: &mut HashMap<Pos, Option<usize>>) {
+    let mut ids = grid.iter().filter_map(|(_, &i)| i).collect_vec();
+    ids.sort_unstable();
+    ids.dedup();
+    for id in ids {
+        dbg!(id);
+        fall(grid, id);
+    }
+}
+
 pub fn part1(input: &str) -> Result<i64> {
     let bricks = parse(input)?;
-    // let mut grid = HashMap::new();
-    // for (i, start, end) in bricks {
-    //     let delta = end - start;
-    // }
+    let mut grid = HashMap::new();
+    // fill the grid in
+    let max_x = bricks.iter().map(|(_, start, _)| start.0).max().unwrap();
+    let max_y = bricks.iter().map(|(_, _, start)| start.1).max().unwrap();
+    let max_z = bricks.iter().map(|(_, _, start)| start.2).max().unwrap();
+    for x in 0..=max_x {
+        for y in 0..=max_y {
+            for z in 1..=max_z {
+                grid.insert(Pos(x, y, z), None);
+            }
+        }
+    }
+    dbg!(max_x, max_y, max_z);
+
+    for (i, start, end) in bricks {
+        for pos in start.iter_to(end) {
+            grid.insert(pos, Some(i));
+        }
+    }
+
+    fall_all(&mut grid);
+
     Ok(0)
 }
 
