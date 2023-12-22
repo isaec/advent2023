@@ -137,7 +137,7 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
         .collect_vec();
 
     for p in pos.iter_mut() {
-        grid.remove(p);
+        grid.insert(*p, None);
     }
 
     let is_vert = pos
@@ -149,7 +149,8 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
     dbg!(is_vert, pos.len());
 
     if is_vert {
-        let min = *pos.iter().min_by_key(|p| p.2).unwrap();
+        let mut min = *pos.iter().min_by_key(|p| p.2).unwrap();
+        dbg!(min);
         while grid
             .get(&(min + Pos(0, 0, -1)))
             .is_some_and(|&i| i.is_none())
@@ -157,6 +158,7 @@ fn fall(grid: &mut HashMap<Pos, Option<usize>>, ident: usize) {
             for p in pos.iter_mut() {
                 *p = *p + Pos(0, 0, -1);
             }
+            min = min + Pos(0, 0, -1);
         }
     } else {
         while pos.iter().all(|p| {
