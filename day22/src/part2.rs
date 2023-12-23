@@ -1,10 +1,13 @@
-use std::{collections::HashMap, fmt::Formatter};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Formatter,
+};
 
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
 use parse::QuickRegex;
-use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 fn main() {
     let input = include_str!("../input.txt");
@@ -113,12 +116,10 @@ fn parse(input: &str) -> Result<Vec<(usize, Pos, Pos)>> {
         .collect()
 }
 
-fn fall(grid: &mut HashMap<Pos, usize>, ident: usize) -> bool {
-    let initial_pos = grid
-        .iter()
-        .filter(|(_, &i)| i == ident)
-        .map(|(&pos, _)| pos)
-        .collect_vec();
+fn fall<T>(grid: &mut HashSet<Pos>, initial_pos: &Vec<Pos>, with_new: &mut T) -> bool
+where
+    T: FnMut(&Pos),
+{
     let mut pos = initial_pos.clone();
 
     for p in pos.iter_mut() {
@@ -155,64 +156,76 @@ fn fall(grid: &mut HashMap<Pos, usize>, ident: usize) -> bool {
     }
 
     for p in pos.iter() {
-        grid.insert(*p, ident);
+        grid.insert(*p);
+        with_new(p);
     }
 
-    initial_pos != pos
+    initial_pos != &pos
 }
 
-fn fall_all<'a>(
-    grid: &mut HashMap<Pos, usize>,
+fn fall_all<'a, T>(
+    grid: &mut HashSet<Pos>,
+    initial_pos: &HashMap<usize, Vec<Pos>>,
     lowest_first_ids: impl Iterator<Item = &'a usize>,
-) -> u64 {
-    lowest_first_ids.map(|i| fall(grid, *i) as u64).sum()
+    with_new: &mut T,
+) -> u64
+where
+    T: FnMut(&Pos, &usize),
+{
+    lowest_first_ids
+        .map(|i| fall(grid, &initial_pos[i], &mut |p| with_new(p, i)) as u64)
+        .sum()
+}
+
+fn compute_lowest_first_ids(initial_pos: &HashMap<usize, Vec<Pos>>) -> Vec<usize> {
+    initial_pos
+        .iter()
+        .sorted_unstable_by_key(|(_, pos_vec)| pos_vec.iter().min_by_key(|p| p.2).unwrap().2)
+        .map(|(i, _)| i)
+        .copied()
+        .collect()
 }
 
 pub fn part2(input: &str) -> Result<u64> {
     let bricks = parse(input)?;
-    let mut grid = HashMap::new();
-    // fill the grid in
-    let max_x = bricks.iter().map(|(_, start, _)| start.0).max().unwrap();
-    let max_y = bricks.iter().map(|(_, _, start)| start.1).max().unwrap();
-    let max_z = bricks.iter().map(|(_, _, start)| start.2).max().unwrap();
-    // for x in 0..=max_x {
-    //     for y in 0..=max_y {
-    //         for z in 1..=max_z {
-    //             grid.insert(Pos(x, y, z), None);
-    //         }
-    //     }
-    // }
-    dbg!(max_x, max_y, max_z);
+    let mut grid = HashSet::new();
+    let mut initial_pos = HashMap::new();
 
     for (i, start, end) in &bricks {
         for pos in start.iter_to(*end) {
-            grid.insert(pos, *i);
+            grid.insert(pos);
         }
+        initial_pos.insert(*i, start.iter_to(*end).collect_vec());
     }
 
-    let lowest_first_ids = grid
-        .iter()
-        .sorted_unstable_by_key(|(pos, _)| pos.2)
-        .map(|(_, i)| i)
-        .dedup()
-        .copied()
-        .collect_vec();
+    let mut post_fall_pos = HashMap::new();
 
-    fall_all(&mut grid, lowest_first_ids.iter());
+    fall_all(
+        &mut grid,
+        &initial_pos,
+        compute_lowest_first_ids(&initial_pos).iter(),
+        &mut |p: &Pos, i: &usize| {
+            post_fall_pos.entry(*i).or_insert_with(Vec::new).push(*p);
+        },
+    );
+
+    let lowest_first_ids = compute_lowest_first_ids(&initial_pos);
 
     // figure out how many bricks can be removed without fall_all changing the grid
     Ok(bricks
-        .par_iter()
+        .iter()
         .map(|(i, _, _)| *i)
+        .par_bridge()
         .map(|i| {
-            let mut grid_copy: HashMap<Pos, _> = grid
-                .iter()
-                .filter(|(_, &i2)| i != i2)
-                .map(|(&k, &v)| (k, v))
-                .collect();
+            let mut grid_copy: HashSet<Pos> = grid.clone();
+            for pos in &post_fall_pos[&i] {
+                grid_copy.remove(pos);
+            }
             fall_all(
                 &mut grid_copy,
+                &post_fall_pos,
                 lowest_first_ids.iter().filter(|&&i2| i2 != i),
+                &mut |_, _| {},
             )
         })
         .sum())
