@@ -118,4 +118,16 @@ mod part1_tests {
 "#};
         assert_eq!(part1(input, 7..=27).expect("part1 should return Ok"), 2);
     }
+
+    #[test]
+    fn seb_example() {
+        let input = indoc! {r#"
+304630863115655, 315365753288440, 126771688438070 @ -6, 22, 310
+308530176569710, 355358024306306, 115688993010071 @ 135, -71, 428
+"#};
+        assert_eq!(
+            part1(input, 200000000000000..=400000000000000).expect("part1 should return Ok"),
+            1
+        );
+    }
 }
