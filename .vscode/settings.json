@@ -18,6 +18,7 @@
     "proptest",
     "raycast",
     "seqs",
+    "signum",
     "testwatch",
     "thiserror",
     "vals"
