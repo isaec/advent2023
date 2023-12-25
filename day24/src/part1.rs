@@ -75,14 +75,16 @@ impl Line {
                 (other.position.1 + other.velocity.1) as f64,
             ),
         )?;
+        dbg!(intersection);
         // determine if the intersection is in the past (only future intersections count)
-        if (intersection.0 - self.position.0 as f64).signum() != (self.velocity.0 as f64).signum()
-            || (intersection.1 - self.position.1 as f64).signum()
-                != (self.velocity.1 as f64).signum()
-            || (intersection.0 - other.position.0 as f64).signum()
-                != (other.velocity.0 as f64).signum()
-            || (intersection.1 - other.position.1 as f64).signum()
-                != (other.velocity.1 as f64).signum()
+        if (self.velocity.0 > 0 && intersection.0 < self.position.0 as f64)
+            || (self.velocity.0 < 0 && intersection.0 > self.position.0 as f64)
+            || (self.velocity.1 > 0 && intersection.1 < self.position.1 as f64)
+            || (self.velocity.1 < 0 && intersection.1 > self.position.1 as f64)
+            || (other.velocity.0 > 0 && intersection.0 < other.position.0 as f64)
+            || (other.velocity.0 < 0 && intersection.0 > other.position.0 as f64)
+            || (other.velocity.1 > 0 && intersection.1 < other.position.1 as f64)
+            || (other.velocity.1 < 0 && intersection.1 > other.position.1 as f64)
         {
             return None;
         }
@@ -122,8 +124,8 @@ mod part1_tests {
     #[test]
     fn seb_example() {
         let input = indoc! {r#"
-304630863115655, 315365753288440, 126771688438070 @ -6, 22, 310
-308530176569710, 355358024306306, 115688993010071 @ 135, -71, 428
+273139584437103, 287334362311499, 281777562457473 @ 26, 28, -30
+321192696696425, 339042958161682, 224857547314094 @ -65, -63, 8
 "#};
         assert_eq!(
             part1(input, 200000000000000..=400000000000000).expect("part1 should return Ok"),
