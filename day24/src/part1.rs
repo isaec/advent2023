@@ -4,6 +4,7 @@ use f128::f128;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
+use num::Float;
 use parse::QuickRegex;
 
 fn main() {
@@ -77,14 +78,14 @@ impl Line {
             ),
         )?;
         // determine if the intersection is in the past (only future intersections count)
-        if (self.velocity.0 > 0 && intersection.0 < self.position.0.into())
-            || (self.velocity.0 < 0 && intersection.0 > self.position.0.into())
-            || (self.velocity.1 > 0 && intersection.1 < self.position.1.into())
-            || (self.velocity.1 < 0 && intersection.1 > self.position.1.into())
-            || (other.velocity.0 > 0 && intersection.0 < other.position.0.into())
-            || (other.velocity.0 < 0 && intersection.0 > other.position.0.into())
-            || (other.velocity.1 > 0 && intersection.1 < other.position.1.into())
-            || (other.velocity.1 < 0 && intersection.1 > other.position.1.into())
+        if (intersection.0 - f128::new(self.position.0)).signum()
+            != f128::new(self.velocity.0).signum()
+            || (intersection.1 - f128::new(self.position.1)).signum()
+                != f128::new(self.velocity.1).signum()
+            || (intersection.0 - f128::new(other.position.0)).signum()
+                != f128::new(other.velocity.0).signum()
+            || (intersection.1 - f128::new(other.position.1)).signum()
+                != f128::new(other.velocity.1).signum()
         {
             return None;
         }
