@@ -21,6 +21,8 @@ geo.workspace = true
 elsa.workspace = true
 num.workspace = true
 f128 = "0.2.9"
+z3 = "0.12.1"
+z3-sys = { version = "0.8.1", features = ["static-link-z3"] }
 
 [[bin]]
 name = "part1"
