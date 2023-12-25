@@ -68,8 +68,8 @@ pub fn part2(input: &str, _bound: RangeInclusive<i64>) -> Result<i64> {
         };
     }
 
-    for (i, rock) in parsed.iter().enumerate().take(3) {
-        let tn = Real::new_const(&ctx, format!("t{i}").as_str());
+    for rock in parsed.iter().take(3) {
+        let tn = Real::fresh_const(&ctx, "t");
         solver.assert(&tn.ge(&r(0)));
         assert_expr!(r(rock.position.0) + r(rock.velocity.0) * tn == throw_x + throw_dx * tn);
         assert_expr!(r(rock.position.1) + r(rock.velocity.1) * tn == throw_y + throw_dy * tn);
