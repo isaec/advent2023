@@ -1,5 +1,6 @@
 use std::ops::RangeInclusive;
 
+use f128::f128;
 use itertools::Itertools;
 use miette::Result;
 use miette_pretty::Pretty;
@@ -39,11 +40,11 @@ fn parse(input: &str) -> Result<Vec<Line>> {
 }
 
 fn find_intersection_2d(
-    (x1, y1): (f64, f64),
-    (x2, y2): (f64, f64),
-    (x3, y3): (f64, f64),
-    (x4, y4): (f64, f64),
-) -> Option<(f64, f64)> {
+    (x1, y1): (f128, f128),
+    (x2, y2): (f128, f128),
+    (x3, y3): (f128, f128),
+    (x4, y4): (f128, f128),
+) -> Option<(f128, f128)> {
     // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line
     let x_num = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
     let x_den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
@@ -51,7 +52,7 @@ fn find_intersection_2d(
     let y_num = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
     let y_den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
 
-    if x_den == 0.0 || y_den == 0.0 {
+    if x_den == 0.0.into() || y_den == 0.0.into() {
         return None;
     }
 
@@ -62,29 +63,28 @@ fn find_intersection_2d(
 }
 
 impl Line {
-    fn get_xy_intersection(&self, other: &Line) -> Option<(f64, f64)> {
+    fn get_xy_intersection(&self, other: &Line) -> Option<(f128, f128)> {
         let intersection = find_intersection_2d(
-            (self.position.0 as f64, self.position.1 as f64),
+            (self.position.0.into(), self.position.1.into()),
             (
-                (self.position.0 + self.velocity.0) as f64,
-                (self.position.1 + self.velocity.1) as f64,
+                (self.position.0 + self.velocity.0).into(),
+                (self.position.1 + self.velocity.1).into(),
             ),
-            (other.position.0 as f64, other.position.1 as f64),
+            (other.position.0.into(), other.position.1.into()),
             (
-                (other.position.0 + other.velocity.0) as f64,
-                (other.position.1 + other.velocity.1) as f64,
+                (other.position.0 + other.velocity.0).into(),
+                (other.position.1 + other.velocity.1).into(),
             ),
         )?;
-        dbg!(intersection);
         // determine if the intersection is in the past (only future intersections count)
-        if (self.velocity.0 > 0 && intersection.0 < self.position.0 as f64)
-            || (self.velocity.0 < 0 && intersection.0 > self.position.0 as f64)
-            || (self.velocity.1 > 0 && intersection.1 < self.position.1 as f64)
-            || (self.velocity.1 < 0 && intersection.1 > self.position.1 as f64)
-            || (other.velocity.0 > 0 && intersection.0 < other.position.0 as f64)
-            || (other.velocity.0 < 0 && intersection.0 > other.position.0 as f64)
-            || (other.velocity.1 > 0 && intersection.1 < other.position.1 as f64)
-            || (other.velocity.1 < 0 && intersection.1 > other.position.1 as f64)
+        if (self.velocity.0 > 0 && intersection.0 < self.position.0.into())
+            || (self.velocity.0 < 0 && intersection.0 > self.position.0.into())
+            || (self.velocity.1 > 0 && intersection.1 < self.position.1.into())
+            || (self.velocity.1 < 0 && intersection.1 > self.position.1.into())
+            || (other.velocity.0 > 0 && intersection.0 < other.position.0.into())
+            || (other.velocity.0 < 0 && intersection.0 > other.position.0.into())
+            || (other.velocity.1 > 0 && intersection.1 < other.position.1.into())
+            || (other.velocity.1 < 0 && intersection.1 > other.position.1.into())
         {
             return None;
         }
@@ -95,7 +95,7 @@ impl Line {
 
 pub fn part1(input: &str, bound: RangeInclusive<i64>) -> Result<usize> {
     let parsed = parse(input)?;
-    let bound = *bound.start() as f64..=*bound.end() as f64;
+    let bound = f128::new(*bound.start())..=f128::new(*bound.end());
     Ok(parsed
         .iter()
         .tuple_combinations()

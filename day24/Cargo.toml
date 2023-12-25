@@ -20,6 +20,7 @@ counter.workspace = true
 geo.workspace = true
 elsa.workspace = true
 num.workspace = true
+f128 = "0.2.9"
 
 [[bin]]
 name = "part1"
